@@ -844,5 +844,39 @@ History:
   in the auditor portal when it shouldn't)
 - 2026-09-22  fixed + guard added
 
-<!-- Next real bug starts at BUG-026. -->
+<!-- Next real bug starts at BUG-027. -->
+
+## BUG-027 — Publish failed on Vercel: `Cannot find module '.../playwright-core/browsers.json'`
+Status: fixed · Area: lib/report/renderReportPdf, lib/actions/publish (C5 publish pipeline)
+
+Repro:      "Confirm publish" on a submitted audit worked in local dev but failed on the deployed Vercel
+            app with `Error: Failed to load external module playwright-9b51c99ca474dcf1: Error: Cannot
+            find module '/var/task/node_modules/playwright-core/lib/coreBundle.js`.
+Root cause: `renderReportPdf.tsx` called `chromium.launch()` from the full `playwright` package inside a
+            Server Action, which becomes a Vercel serverless function. Full `playwright` needs its
+            downloaded browser binary plus `browsers.json` on disk at runtime; Next's file tracer has no
+            static way to see those (they're resolved dynamically, not via a traceable `require`), so
+            neither is bundled into the deployed function — and even if bundled, a normal desktop Chromium
+            build has no matching system libraries in Vercel's Lambda-based runtime. Full Playwright is
+            built for CI/dedicated-server use, not serverless functions.
+Fix:        Swapped the runtime dependency to `playwright-core` (no bundled browser) + `@sparticuz/chromium`
+            (a Lambda-compatible headless Chromium build). Added `launchChromium()` in `renderReportPdf.tsx`,
+            which uses `@sparticuz/chromium`'s `executablePath()`/`args` when `process.env.VERCEL` or
+            `AWS_LAMBDA_FUNCTION_NAME` is set, and falls back to a locally-installed browser (via the
+            `playwright` devDependency's `chromium.executablePath()`) otherwise. `next.config.ts` marks both
+            packages `serverExternalPackages` so Next doesn't try to trace/bundle them. Added
+            `maxDuration = 60` to the review page (`app/admin/(protected)/review/[id]/page.tsx`) so the
+            `publishAudit` Server Action isn't cut off by Vercel's default function timeout while Chromium
+            renders the PDF.
+Guard:      `npm run build` passes (typecheck, `serverExternalPackages` accepted). Manual — publish an
+            audit locally (uses the dev-installed Chromium) and on the deployed Vercel app (uses
+            `@sparticuz/chromium`); both must produce a downloadable PDF with no `browsers.json`/module
+            error. Watch for any future prod dependency on full `playwright` re-introducing this — it must
+            stay a `devDependency` only.
+Related:    ADR-0010, package.json, lib/report/renderReportPdf.tsx, next.config.ts,
+            app/admin/(protected)/review/[id]/page.tsx, lib/actions/publish.ts
+
+History:
+- 2026-09-26  opened (user reported the error from a Vercel deploy log)
+- 2026-09-26  fixed + guard added
 

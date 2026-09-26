@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { chromium } from 'playwright';
+import { chromium } from 'playwright-core';
 import type { ReportViewModel } from './reportViewModel';
 import { ReportBody, type PublishBadge } from '@/app/admin/(protected)/review/[id]/report/ReportBody';
 
@@ -48,6 +48,24 @@ ${bodyMarkup}
 </html>`;
 }
 
+// Vercel's serverless runtime has no headless-Chromium system deps and doesn't bundle
+// playwright's downloaded browser, so @sparticuz/chromium (a Lambda-compatible build)
+// stands in for it there; locally, npm's devDependency on full `playwright` provides a
+// real installed browser via its own executablePath. Never bundle full `playwright` as a
+// prod dependency — its browsers.json/binary aren't traced into the function bundle.
+async function launchChromium() {
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    const sparticuzChromium = (await import('@sparticuz/chromium')).default;
+    return chromium.launch({
+      args: sparticuzChromium.args,
+      executablePath: await sparticuzChromium.executablePath(),
+      headless: true,
+    });
+  }
+  const { chromium: devChromium } = await import('playwright');
+  return chromium.launch({ executablePath: devChromium.executablePath() });
+}
+
 // Renders the SAME ReportBody component tree the review screen shows (lib/report/
 // reportViewModel.ts assembles identical data for both), to a static HTML string, then
 // prints it to a PDF buffer via headless Chromium. Letter size, 0.6in margin — DESIGN.md
@@ -62,7 +80,7 @@ export async function renderReportPdf(vm: ReportViewModel, publish: PublishBadge
   const bodyMarkup = renderToStaticMarkup(<ReportBody vm={vm} publish={publish} interactive={false} />);
   const html = buildHtmlDocument(bodyMarkup);
 
-  const browser = await chromium.launch();
+  const browser = await launchChromium();
   try {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle' });

@@ -12,6 +12,10 @@ import { GenerateReportButton } from './GenerateReportButton';
 import { PublishButton } from './PublishButton';
 import { FinancialSummaryPanel } from './FinancialSummaryPanel';
 
+// Headless-Chromium PDF rendering (publishAudit -> renderReportPdf) can outrun Vercel's
+// default Server Action timeout; this raises the ceiling for the whole page's actions.
+export const maxDuration = 60;
+
 const RESTAURANT_ICON = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--navy-700)" strokeWidth="1.8" style={{ flexShrink: 0 }}>
     <path d="M3 9l1-5h16l1 5" />

@@ -5,6 +5,12 @@ and DESIGN Part B). One dated line per shipped thing.
 
 ## Foundations — 2026
 
+### 2026-09-26
+- Fixed: publishing an audit failed on the deployed Vercel app with a
+  `playwright-core`/`browsers.json` module error — full Playwright can't run in a
+  serverless function. PDF generation now uses `playwright-core` + `@sparticuz/chromium`
+  in production, with local dev unaffected (ADR-0010, BUG-027).
+
 ### 2026-09-22
 - Removed "Observation" as a checklist item status — the auditor and admin review screens
   now offer Pass/Fail/N-A only; existing `observation` items were folded into `fail`

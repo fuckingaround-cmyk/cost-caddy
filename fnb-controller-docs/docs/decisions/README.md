@@ -18,5 +18,6 @@ and are where *new* decisions get recorded going forward.
 | [0007](0007-checklist-item-status-drops-observation.md) | Checklist item status is Pass/Fail/N-A only; "Observation" removed | accepted | 2026-09-22 |
 | [0008](0008-audit-date-range-is-a-period-not-a-deadline.md) | Audit date range is the recurring conduct window, not a due date — overdue tracking removed | accepted | 2026-09-22 |
 | [0009](0009-evidence-photo-links-use-long-lived-signed-urls.md) | Evidence photo links in the published PDF use long-lived signed URLs, not a redirect route or a public bucket | accepted | 2026-09-22 |
+| [0010](0010-pdf-generation-uses-sparticuz-chromium-on-vercel.md) | PDF generation uses `playwright-core` + `@sparticuz/chromium` on Vercel, not full Playwright | accepted | 2026-09-26 |
 
 Statuses: proposed · accepted · superseded (note which ADR supersedes it).
