@@ -33,8 +33,12 @@ Go with **option 1**. `package.json`: `playwright-core` + `@sparticuz/chromium` 
 dependency again, or BUG-027 recurs). `renderReportPdf.tsx` picks the launch path by environment; the
 render pipeline (HTML generation, `page.pdf()` call, print CSS) is unchanged. `next.config.ts` marks both
 packages `serverExternalPackages` so Next's file tracer doesn't try to bundle/tree-shake their
-dynamically-resolved binaries. The review page (`app/admin/(protected)/review/[id]/page.tsx`) sets
-`maxDuration = 60` so Vercel's default Server Action timeout doesn't cut off a slow Chromium render.
+dynamically-resolved binaries, **and** sets `outputFileTracingIncludes` for both — `serverExternalPackages`
+alone stops bundling but doesn't make the tracer physically copy their non-JS runtime assets
+(`playwright-core/browsers.json`, `@sparticuz/chromium`'s compressed binary) into the deployed function,
+since neither is reached via a statically-traceable `require()`; BUG-027 regressed once on this exact gap.
+The review page (`app/admin/(protected)/review/[id]/page.tsx`) sets `maxDuration = 60` so Vercel's default
+Server Action timeout doesn't cut off a slow Chromium render.
 
 ## Consequences
 - Publish works identically in local dev (real Playwright-installed Chromium) and on Vercel

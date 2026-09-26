@@ -847,7 +847,7 @@ History:
 <!-- Next real bug starts at BUG-027. -->
 
 ## BUG-027 — Publish failed on Vercel: `Cannot find module '.../playwright-core/browsers.json'`
-Status: fixed · Area: lib/report/renderReportPdf, lib/actions/publish (C5 publish pipeline)
+Status: fixed (regressed once, see history) · Area: lib/report/renderReportPdf, next.config, lib/actions/publish (C5 publish pipeline)
 
 Repro:      "Confirm publish" on a submitted audit worked in local dev but failed on the deployed Vercel
             app with `Error: Failed to load external module playwright-9b51c99ca474dcf1: Error: Cannot
@@ -868,15 +868,24 @@ Fix:        Swapped the runtime dependency to `playwright-core` (no bundled brow
             `maxDuration = 60` to the review page (`app/admin/(protected)/review/[id]/page.tsx`) so the
             `publishAudit` Server Action isn't cut off by Vercel's default function timeout while Chromium
             renders the PDF.
-Guard:      `npm run build` passes (typecheck, `serverExternalPackages` accepted). Manual — publish an
-            audit locally (uses the dev-installed Chromium) and on the deployed Vercel app (uses
-            `@sparticuz/chromium`); both must produce a downloadable PDF with no `browsers.json`/module
-            error. Watch for any future prod dependency on full `playwright` re-introducing this — it must
-            stay a `devDependency` only.
+Guard:      `npm run build` passes (typecheck). Manual — publish an audit locally (uses the dev-installed
+            Chromium) and on the deployed Vercel app (uses `@sparticuz/chromium`); both must produce a
+            downloadable PDF with no `browsers.json`/module error. Inspect `.next/server/app/**/*.nft.json`
+            after a build and confirm a `playwright-core/browsers.json` entry is present — this is the
+            concrete signal the first fix pass lacked and silently shipped without. Watch for any future
+            prod dependency on full `playwright` re-introducing this — it must stay a `devDependency` only.
 Related:    ADR-0010, package.json, lib/report/renderReportPdf.tsx, next.config.ts,
             app/admin/(protected)/review/[id]/page.tsx, lib/actions/publish.ts
 
 History:
 - 2026-09-26  opened (user reported the error from a Vercel deploy log)
-- 2026-09-26  fixed + guard added
+- 2026-09-26  fixed (swapped to playwright-core + @sparticuz/chromium, marked both
+  `serverExternalPackages`) — incomplete, see below
+- 2026-09-26  regressed: user reported the identical `browsers.json` error persisting after deploy.
+  `serverExternalPackages` only stops Next from bundling/tree-shaking the packages — it doesn't make the
+  file tracer copy their non-JS assets (playwright-core's `browsers.json`, @sparticuz/chromium's binary)
+  into the deployed function, since both are resolved dynamically rather than via a traceable `require()`.
+  Re-fixed by adding `outputFileTracingIncludes` for both packages in `next.config.ts`; verified directly
+  against the build output that `browsers.json` is now listed in the route trace files, rather than just
+  assuming the config change worked.
 
