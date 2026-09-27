@@ -290,25 +290,32 @@ Done when: Submit is disabled until every checklist item is answered AND every m
 Use the Super Admin file's `submitDisabled` logic — it checks metrics *and* checklist. The auditor file's
 version checks only the checklist and is incomplete.
 
-### B6 — AI remark polish on submit
+### B6 — AI remark polish + severity scoring on submit
 ```
-Screens:   — (a status indicator on pending and on reviewQueue)
+Screens:   — (a status indicator on pending and on review)
 Design:    NONE — this package has no design reference. It is a product decision recorded
-           in ADR-0004; the mock polishes admin-side inside generateReport() instead
+           in ADR-0004 (prose polish) and ADR-0011 (severity scoring, provider change to
+           DeepSeek); the mock polishes and classifies admin-side inside generateReport()
+           instead
 Depends:   B5
-Traces to: ADR-0004; DESIGN Part B UX-010 (supersedes UX-004)
-Done when: submitting queues a job that rewrites every non-pass remark into report prose
-           and stores the polished text in place of the raw remark; the audit carries a
-           polish state (polishing / ready / failed) surfaced in the review queue; a
-           failed or timed-out polish NEVER blocks or reverses the submit — the audit is
-           submitted regardless and unpolished remarks pass through verbatim; and the
-           model rewrites prose only, never touching or inventing a number
+Traces to: ADR-0004; ADR-0011; DESIGN Part B UX-010 (supersedes UX-004)
+Done when: submitting queues a single DeepSeek job that (a) rewrites every non-pass remark
+           into report prose and stores it in place of the raw remark, and (b) for every
+           Fail item, assigns category/severity/impact/correctiveAction/sla/ownership
+           against the scoring rubric (lib/ai/severityRubric.ts); the audit carries an AI
+           state (polishing / ready / failed) surfaced on the auditor's pending list and
+           the admin review screen; a failed or timed-out job NEVER blocks or reverses the
+           submit — the audit is submitted regardless, remarks pass through verbatim, and
+           Fail items are picked up by C3's fallback classifier at "Generate report"; the
+           model rewrites prose only and never invents a number — severity classification
+           is the one stated exception (ADR-0011); and the reviewer can still override
+           every finding field, severity included, exactly as C3 already allowed
 ```
 
 > **This reverses a previously stated invariant.** Remarks were "quoted, not rewritten". They are now
 > rewritten, and the verbatim field text is not retained — so there is nothing to revert to if a polish
 > distorts meaning, and with no audit trail the original wording is unrecoverable. Accepted deliberately;
-> the reasoning and consequences are in **ADR-0004**.
+> the reasoning and consequences are in **ADR-0004** and **ADR-0011**.
 
 ---
 
@@ -344,7 +351,7 @@ Done when: it is a pure function with no I/O, unit-tested against the design fil
 Report-surface formulas: sales − discount = net sales; + taxes + service charge = gross; taxes and service
 charge allocated pro-rata on net sales; APC on covers.
 
-### C3 — Findings generation
+### C3 — Findings generation (fallback since ADR-0011)
 ```
 Screens:   review (reportReady)
 Design:    Super Admin Flow.dc.html → generateReport / CATEGORY_RULES
@@ -357,10 +364,13 @@ Done when: every Fail becomes a finding with reference ID, category, severity, i
            `observation` removed, see `DESIGN.md` Part B **UX-024**)
 ```
 
-`CATEGORY_RULES` is the deterministic floor — 10 keyword rules over `label + remark`, falling back to
-Operational Control / Medium. Categories: Temperature & Expiry · Food Safety Risk · Inventory Control ·
-Hygiene Standards · Statutory Compliance · Revenue Control · Operational Control. SLA vocabulary:
-Immediate (24 Hours) · Within 24 Hours · Within 48 Hours · Within 5 Business Days · Reviewed.
+Since **ADR-0011**, B6's DeepSeek job already assigns most Fail items' findings at submit — `classifyFinding`
+(`CATEGORY_RULES`, 10 keyword rules over `label + remark`, falling back to Operational Control / Medium) is
+now the **fallback**, invoked here only for Fail items with no severity yet: ones the AI job didn't reach
+(failed/timed out) or that were corrected into Fail after submit. Idempotent either way — Regenerate never
+overwrites an AI-set or reviewer-edited finding. Categories: Temperature & Expiry · Food Safety Risk ·
+Inventory Control · Hygiene Standards · Statutory Compliance · Revenue Control · Operational Control. SLA
+vocabulary: Immediate (24 Hours) · Within 24 Hours · Within 48 Hours · Within 5 Business Days · Reviewed.
 
 Severity is **High / Medium / Low** only (R7). Remarks arrive already polished from B6 — C3 does not
 rewrite them again.

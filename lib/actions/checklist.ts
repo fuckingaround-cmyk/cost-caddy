@@ -10,7 +10,9 @@ import { requireRole } from '@/lib/auth';
 import { auditItemFilePath, deleteFile, uploadFile } from '@/lib/storage';
 import { parseMetricValue } from '@/lib/calc';
 import { isItemAnswered } from '@/lib/checklist/isItemAnswered';
-import { polishAuditRemarks } from '@/lib/ai/polishRemarks';
+import { scoreAuditRemarks } from '@/lib/ai/scoreAuditRemarks';
+import { extractEvidenceTable, sweepEvidenceExtraction } from '@/lib/ai/extractEvidenceTable';
+import type { EvidencePhotoType } from '@/lib/evidence/types';
 
 async function requireOwnedAudit(auditId: string) {
   const user = await requireRole('auditor');
@@ -107,6 +109,33 @@ export async function uploadItemPhoto(auditItemId: string, formData: FormData): 
   return { id: row.id, name: file.name, meta, kind };
 }
 
+// B7/ADR-0012 — the auditor picks (or changes) the evidence-type recipe for a photo
+// after it's attached; a checkpoint can only suggest a default (see
+// lib/ai/evidenceRecipes.ts's suggestedEvidenceType), never decide it, since the same
+// checkpoint code can imply more than one register type. Setting it queues a Gemini
+// extraction, fire-and-forget, same as B4's photo upload never blocking on anything.
+export async function setEvidencePhotoType(fileId: string, evidenceType: EvidencePhotoType | null): Promise<void> {
+  const user = await requireRole('auditor');
+  const [file] = await db
+    .select({ id: auditItemFiles.id, auditStatus: audits.status })
+    .from(auditItemFiles)
+    .innerJoin(auditItems, eq(auditItems.id, auditItemFiles.auditItemId))
+    .innerJoin(audits, eq(audits.id, auditItems.auditId))
+    .where(and(eq(auditItemFiles.id, fileId), eq(audits.orgId, user.orgId), eq(audits.auditorId, user.id)))
+    .limit(1);
+  if (!file) throw new Error('Not found');
+  assertEditable(file.auditStatus);
+
+  await db
+    .update(auditItemFiles)
+    .set({ evidenceType, extractionStatus: null, extractedTable: null, extractionModel: null, extractedAt: null })
+    .where(eq(auditItemFiles.id, fileId));
+
+  if (evidenceType) {
+    after(() => extractEvidenceTable(fileId));
+  }
+}
+
 // B5 — the submit gate. Recomputes completeness from the DB rather than trusting the
 // client's own submitDisabled check, then flips the audit to `submitted`, permanently
 // immutable for the auditor from here (no unsubmit). Ported from the Super Admin
@@ -140,13 +169,17 @@ export async function submitAudit(auditId: string): Promise<void> {
 
   await db
     .update(audits)
-    .set({ status: 'submitted', submittedAt: new Date(), polishState: 'polishing' })
+    .set({ status: 'submitted', submittedAt: new Date(), aiState: 'polishing' })
     .where(eq(audits.id, auditId));
 
-  // B6/ADR-0004: queued after the response is sent (survives the redirect() below —
-  // `after()` runs even when redirect/notFound is called), never awaited here. A
-  // failure inside it can never block or reverse this submit — see polishAuditRemarks.
-  after(() => polishAuditRemarks(auditId));
+  // ADR-0011 (was B6/ADR-0004): queued after the response is sent (survives the
+  // redirect() below — `after()` runs even when redirect/notFound is called), never
+  // awaited here. A failure inside it can never block or reverse this submit — see
+  // scoreAuditRemarks.
+  after(() => scoreAuditRemarks(auditId));
+  // Safety net for any evidence photo whose capture-time extraction never fired
+  // (ADR-0012) — see sweepEvidenceExtraction.
+  after(() => sweepEvidenceExtraction(auditId));
 
   redirect(`/auditor/report/${auditId}`);
 }

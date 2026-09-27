@@ -1,5 +1,6 @@
 import { pgEnum } from 'drizzle-orm/pg-core';
 import { OPERATIONAL_FILE_TYPES } from '@/lib/operational/types';
+import { EVIDENCE_PHOTO_TYPES } from '@/lib/evidence/types';
 
 // RBAC roles (F4). 'outlet' has no password — report-token access only — but the
 // role still appears here so authorization checks have one vocabulary.
@@ -25,7 +26,10 @@ export const auditStatusEnum = pgEnum('audit_status', [
   'submitted',
   'published',
 ]);
-export const polishStateEnum = pgEnum('polish_state', ['polishing', 'ready', 'failed']);
+// Covers the submit-time AI job end to end (remark polish + severity scoring, ADR-0011)
+// — the Postgres type/values keep their original names ("polishing" still reads fine
+// as "AI processing"); only the TS identifier and the column it backs are renamed.
+export const aiStateEnum = pgEnum('polish_state', ['polishing', 'ready', 'failed']);
 
 export const itemStatusEnum = pgEnum('item_status', ['pending', 'pass', 'fail', 'na']);
 export const severityEnum = pgEnum('severity', ['High', 'Medium', 'Low']);
@@ -42,3 +46,15 @@ export const operationalFileTypeEnum = pgEnum('operational_file_type', OPERATION
 // real; PDF/image have no OCR adapter yet (EXECUTION.md "Not yet designed" — per-client
 // operational-file import adapters), so they always land here as 'unreadable'.
 export const opFileParseStatusEnum = pgEnum('op_file_parse_status', ['parsed', 'unreadable']);
+
+// Evidence-photo table extraction (B7, ADR-0012). The recipe the auditor picked for a
+// checklist evidence photo (fixed column set + prompt per type, sourced from
+// lib/evidence/types so client components share the vocabulary without pulling in the
+// Postgres driver — same pattern as operationalFileTypeEnum above) and the state of its
+// Gemini vision extraction attempt.
+export const evidencePhotoTypeEnum = pgEnum('evidence_photo_type', EVIDENCE_PHOTO_TYPES);
+export const evidenceExtractionStatusEnum = pgEnum('evidence_extraction_status', [
+  'pending',
+  'extracted',
+  'failed',
+]);

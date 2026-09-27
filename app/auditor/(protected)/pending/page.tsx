@@ -102,7 +102,7 @@ function HistoryRow({ audit }: { audit: AuditorAuditRow }) {
         meta={
           <>
             Period {audit.periodEnd}
-            <PolishStatus state={audit.polishState} />
+            <AiStatus state={audit.aiState} />
           </>
         }
         status={<Chip {...chip} />}
@@ -111,14 +111,15 @@ function HistoryRow({ audit }: { audit: AuditorAuditRow }) {
   );
 }
 
-// B6 — the one status indicator this package adds outside the submit flow itself
-// (reviewQueue gets its own copy of this once C1 exists).
-function PolishStatus({ state }: { state: AuditorAuditRow['polishState'] }) {
+// ADR-0011 (was B6's PolishStatus) — the one status indicator this package adds outside
+// the submit flow itself (reviewQueue gets its own copy of this once C1 exists). Now
+// covers remark polish + severity scoring, not prose alone.
+function AiStatus({ state }: { state: AuditorAuditRow['aiState'] }) {
   if (state === 'polishing') {
-    return <div style={{ fontSize: 11, color: 'var(--hint)', marginTop: 3 }}>Polishing remarks…</div>;
+    return <div style={{ fontSize: 11, color: 'var(--hint)', marginTop: 3 }}>Reviewing remarks…</div>;
   }
   if (state === 'failed') {
-    return <div style={{ fontSize: 11, color: 'var(--status-warn-fg)', marginTop: 3 }}>Remarks kept as typed — polish failed</div>;
+    return <div style={{ fontSize: 11, color: 'var(--status-warn-fg)', marginTop: 3 }}>Remarks kept as typed — AI review failed</div>;
   }
   return null;
 }

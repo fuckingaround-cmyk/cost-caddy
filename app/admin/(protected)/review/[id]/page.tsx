@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
-import { getAuditForReview, listOperationalFiles } from '@/lib/queries/review';
+import { getAuditForReview, listOperationalFiles, type ReviewAuditDetail } from '@/lib/queries/review';
 import { getAuditItemFiles, getAuditItems, getAuditMetricDefs, getAuditMetricValues } from '@/lib/queries/audits';
 import { metricSections } from '@/lib/calc';
 import { createSignedUrl } from '@/lib/storage';
@@ -54,6 +54,9 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
           meta: f.meta,
           isImage: f.kind === 'image',
           url: await createSignedUrl(f.storagePath).catch(() => ''),
+          evidenceType: f.evidenceType,
+          extractionStatus: f.extractionStatus,
+          extractedTable: f.extractedTable,
         })),
       );
       return {
@@ -120,6 +123,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <AiStatePill state={audit.aiState} />
           <GenerateReportButton auditId={id} generated={!!audit.reportGeneratedAt} />
           {audit.reportGeneratedAt && <PublishButton auditId={id} />}
         </div>
@@ -205,4 +209,33 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
 function displayInputValue(value: string | number | null | undefined): string {
   if (value === null || value === undefined || value === '') return '—';
   return String(value);
+}
+
+// ADR-0011 — a `failed` AI job means Fail items are missing severity until "Generate
+// report" runs classifyFinding as a fallback; a reviewer opening the queue should see why.
+function AiStatePill({ state }: { state: ReviewAuditDetail['aiState'] }) {
+  if (state === 'polishing') {
+    return (
+      <span style={{ fontSize: 11, color: 'var(--hint)', padding: '5px 9px', borderRadius: 'var(--radius-pill)', background: 'var(--surface-alt-1)' }}>
+        AI reviewing remarks…
+      </span>
+    );
+  }
+  if (state === 'failed') {
+    return (
+      <span
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: 'var(--status-warn-fg)',
+          padding: '5px 9px',
+          borderRadius: 'var(--radius-pill)',
+          background: 'var(--surface-alt-1)',
+        }}
+      >
+        AI scoring failed — findings await Generate report
+      </span>
+    );
+  }
+  return null;
 }

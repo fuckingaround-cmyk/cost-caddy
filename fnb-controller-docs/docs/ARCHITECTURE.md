@@ -42,7 +42,8 @@ Two delivery stages:
 | Storage | **Supabase Storage** (S3-compatible, signed URLs) | Holds auditor photos, generated report PDFs, imported operational files. Cloudflare R2 is the fallback only if this ever gets high-traffic/file-heavy. |
 | PDF export | **Playwright** (headless Chromium) against the print CSS | Report is already print-first (`data-avoid` / `data-break`). Version-stamped output. The only export format shipped — no XLSX for now (`EXECUTION.md` R12). |
 | Hosting | **Cloudflare or Vercel** (free tier at this scale) | Next.js app here; Supabase holds Postgres + Storage. Portable for eventual client handover. |
-| LLM layer | **Anthropic SDK (TS)**, `claude-opus-5` | Introduced in **B6** (submit-time remark polish, ADR-0004) — earlier than originally planned; Stage B's analytics narration (below) reuses the same SDK/client, not a second integration. No job queue yet: B6 uses Next's `after()` to run the polish post-response rather than Stage B's Graphile Worker/pg-boss, since Stage A has no worker host. |
+| LLM layer | **DeepSeek** (`deepseek-chat`, plain `fetch`, no SDK) | Introduced in **B6** (submit-time remark polish + severity scoring, ADR-0011 — was Anthropic under ADR-0004) — earlier than originally planned. Stage B's analytics narration provider is not yet decided; it is no longer assumed to reuse this client. No job queue yet: B6 uses Next's `after()` to run the job post-response rather than Stage B's Graphile Worker/pg-boss, since Stage A has no worker host. |
+| Vision layer | **Gemini** (`gemini-2.5-flash`, plain `fetch`, no SDK) | Introduced in **B7** (evidence-photo table extraction, ADR-0012) — independent of DeepSeek's job, sees only evidence photos, never remark text or financial figures. Same `after()`-based, fire-and-forget pattern as B6; a failure never blocks upload or submit. |
 
 **Why TypeScript end-to-end (not a Python backend):** the frontend is TS regardless; a single language
 gives shared types across the wire (no Pydantic-vs-TS drift on deep, versioned shapes), a near-mechanical
@@ -57,7 +58,8 @@ rejected: no lower floor, more billing complexity, and Firebase would mean aband
 
 ### Stage B additions (Phase 3)
 Excel ingestion **SheetJS**; mapping engine **typed TS** (+ optional **Arquero**); analytics **TS**;
-LLM layer **Anthropic SDK (TS)**; background jobs **Graphile Worker / pg-boss** (Postgres-backed);
+LLM layer **not yet decided** (DeepSeek is Stage A's choice for B6; Stage B may reuse it or pick another —
+open per ADR-0011); background jobs **Graphile Worker / pg-boss** (Postgres-backed);
 worker host a small always-on container (Fly/Railway) since long parse+LLM jobs exceed serverless
 timeouts; dashboards **Recharts**; white-label theming via the existing CSS-variable token layer.
 
@@ -126,14 +128,16 @@ Audit          { id, token, outletId, auditorId, templateId, periodStart?, perio
                  status: 'assigned'|'in-progress'|'submitted'|'published',
                  metricDefs: MetricDef[],                 // FROZEN copy taken at creation
                  submittedAt?, publishedAt?, version?, metrics{}, items[],
-                 polishState?: 'polishing'|'ready'|'failed' }         // ADR-0004
+                 aiState?: 'polishing'|'ready'|'failed' }             // ADR-0011 (was polishState, ADR-0004)
 AuditItem      { id, code, cat, catCode, label, guidance, freeform,
                  status: 'pending'|'pass'|'fail'|'na',
                  remark, naReason?, photos:n, files[],
-                 severity?: 'High'|'Medium'|'Low',        // fail only; set by reviewer
+                 severity?: 'High'|'Medium'|'Low',        // fail only; AI-assigned at submit (ADR-0011),
+                                                           // reviewer-editable, classify.ts is the fallback
                  impact?, correctiveAction?, sla?, ownership?,
                  resolutionStatus?: 'Pending'|'Resolved', // corrective-action tracking (D14)
-                 refId?, category? }                      // set by report generation
+                 refId?, category?,                       // set by the AI job or report generation
+                 aiAssessment?: object }                  // raw AI output per item (ADR-0011, forward-compat)
 OperationalFile { id, auditId, type, period, name, format, storagePath,
                   parseStatus: 'parsed'|'unreadable', coverageSummary? }  // attached in review (C1)
 Report         { auditId, version, findings[], attachments[], token, publishedAt }
@@ -169,11 +173,15 @@ stacked steps + right-aligned progress). Layout differs; behaviour and data are 
 ---
 
 ## 7. Report pipeline
-**Submit → AI polishes every non-pass remark into report prose, replacing the raw text** (async job with a
-`polishState`; a failure never blocks or reverses the submit — ADR-0004) → Review (submission shown
-**exactly as captured**, never edited in place) → attach operational reports → **Generate report**
-(findings from every Fail; financial sections from captured metrics; the LLM narrates only and
-**never computes numbers**, D12) → edit findings → **Publish** (versioned + frozen; a separate action from
+**Submit → AI (DeepSeek) polishes every non-pass remark into report prose, replacing the raw text, and
+scores severity/category/impact/corrective-action/SLA/ownership for every Fail item** against a defined
+rubric (async job with an `aiState`; a failure never blocks or reverses the submit — ADR-0011, was
+ADR-0004) → Review (submission shown **exactly as captured**, never edited in place; findings usually
+already populated, reviewer can still override any field) → attach operational reports → **Generate
+report** (financial sections from captured metrics; fills severity/findings only for whatever Fail items
+the AI job didn't reach, via the deterministic fallback classifier; the LLM narrates financial figures only
+and **never computes numbers**, D12 — severity classification is a stated exception, ADR-0011) → edit
+findings → **Publish** (versioned + frozen; a separate action from
 copying the share link) → render report v4 → **PDF via Playwright, version-stamped**
 (`v1 · 21 Jul 2026`) — the only export format — delivered directly by the admin (no Client Portal for
 now; `EXECUTION.md` R12).
@@ -187,21 +195,34 @@ now; `EXECUTION.md` R12).
   `revGroup: 'bar'|'kitchen'` model, not the report mock's three-way Food/Bar/Liquor split (`DESIGN.md`
   Part B **UX-014**). Operational-file import sits behind a per-client adapter interface (formats vary,
   not yet designed) — C2 only carries each attached file's type/period/parse-status through untouched.
-- **Findings generation** is `lib/report/classify.ts`'s `classifyFinding` — the mock's `CATEGORY_RULES`/
-  `classify` ported verbatim (10 keyword rules over label+remark, Operational Control/Medium fallback).
-  A "Generate report" action (`generateReport`) classifies every Fail with no severity yet —
-  idempotent, so Regenerate never overwrites a reviewer's edit — and stamps `audits.reportGeneratedAt`.
+- **Findings generation** is primarily `lib/ai/scoreAuditRemarks.ts` now (ADR-0011) — DeepSeek assigns
+  category/severity/impact/correctiveAction/sla/ownership for every Fail item at submit, against
+  `lib/ai/severityRubric.ts`'s scoring matrix. `lib/report/classify.ts`'s `classifyFinding` — the mock's
+  `CATEGORY_RULES`/`classify` ported verbatim (10 keyword rules over label+remark, Operational
+  Control/Medium fallback) — is kept as the **fallback**: "Generate report" (`generateReport`) still
+  classifies every Fail with no severity yet — idempotent, so Regenerate never overwrites an AI-set or
+  reviewer-edited finding — and stamps `audits.reportGeneratedAt`. Normally there is nothing left for it to
+  classify.
   `refId` is always the item's own template code (e.g. `KIT-03`), never a generated `EQ-01` sequence
   (`DESIGN.md` Part B **UX-015**) — every real audit item already has one from the template snapshot
   (A5), so there's nothing for a fallback scheme to cover. Pass/N-A items are never classified; a status
   correction (C1) that moves an item away from Fail clears any existing finding so "Pass
   carries no severity" keeps holding after an edit.
+- **Evidence-photo table extraction** (`lib/ai/extractEvidenceTable.ts`, ADR-0012, **B7**) is a second,
+  independent AI job: the auditor picks a fixed recipe (`lib/ai/evidenceRecipes.ts`) per evidence photo
+  at capture — checklist checkpoints can only *suggest* a default (`lib/evidence/suggest.ts`), never
+  decide it — and Gemini transcribes the photo's table verbatim under that recipe's columns. Fires from
+  `setEvidencePhotoType` (fire-and-forget), with a submit-time sweep (`sweepEvidenceExtraction`) as the
+  safety net for whatever the capture-time trigger missed — same shape as B6/`scoreAuditRemarks`. An
+  extracted table is reviewer-editable and shown immediately, the same trust model `updateFinding` gives
+  AI-assigned severity — no separate confirm step.
 - **Report v4** (`app/admin/(protected)/review/[id]/report/`) has its own type system (Inter Tight +
   IBM Plex Mono `tabular-nums`, Material Symbols), is print-first (`[data-avoid]`/`[data-break]` in
   `globals.css`), and renders §1 (KPI strip + revenue matrix + two composition donuts), §1B (costing via
-  `lib/report/costingBreakdown.ts`), and §2 (per-department compliance table from C3's findings). No §3
-  (R9). `showCharts`/`showSummaryRibbon` are real flags that both default true (no story asks to hide
-  either yet). The Evidence column carries real photo thumbnails, clickable both on the web and in
+  `lib/report/costingBreakdown.ts`), §2 (per-department compliance table from C3's findings), and §3
+  (**Evidence Registers**, `EvidenceRegisterSection.tsx` — Gemini-extracted tables grouped by evidence
+  type, ADR-0012; not R9's Findings Register, which is still cut). `showCharts`/`showSummaryRibbon` are
+  real flags that both default true (no story asks to hide either yet). The Evidence column carries real photo thumbnails, clickable both on the web and in
   the PDF — the PDF thumbnail is wrapped in a real `<a href>` backed by a long-lived (10-year)
   signed URL, since a published PDF is opened long after the storage layer's normal 1-hour default
   would expire (ADR-0009) — `DESIGN.md` Part B **UX-016**/**UX-017**/**UX-025**. Reached from the
@@ -253,8 +274,9 @@ Offline engine · autosave · **live POS/accounting/inventory sync** (all financ
 Carried from the Plan §9 — resolve before the dependent work: (1) connectivity while auditing (validates
 the no-offline bet); (2) real client Excel samples before Phase 3 (drive the mapping engine + the
 TS-vs-Python ingestion call, D11); (3) which Phase 3 modules are truly in the 7 weeks; (4) **data-to-LLM
-boundary sign-off + residency (D12) — now broader than financial data, since ADR-0004 sends every
-non-pass auditor remark to the model at submit**; (5) whether `org_id` grows into real multi-tenancy;
+boundary sign-off + residency (D12) — now broader than financial data, since ADR-0004/ADR-0011 send every
+non-pass auditor remark (and, for Fail items, its severity assessment) to DeepSeek at submit**; (5) whether
+`org_id` grows into real multi-tenancy;
 (6) data residency (India / DPDP Act); (7) outlet report-token expiry policy.
 
 Build order and per-package acceptance live in `docs/EXECUTION.md`, which also records the eleven

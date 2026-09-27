@@ -52,7 +52,9 @@ export function ChecklistScreen({
   const [items, setItems] = useState<ChecklistItemState[]>(() =>
     initialItems.map((it) => ({
       ...it,
-      photos: initialFiles.filter((f) => f.auditItemId === it.id).map((f) => ({ id: f.id, name: f.name, meta: f.meta ?? '' })),
+      photos: initialFiles
+        .filter((f) => f.auditItemId === it.id)
+        .map((f) => ({ id: f.id, name: f.name, meta: f.meta ?? '', kind: f.kind, evidenceType: f.evidenceType })),
     })),
   );
   const [activeItemId, setActiveItemId] = useState<string | null>(null);

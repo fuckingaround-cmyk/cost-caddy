@@ -13,6 +13,9 @@ export type ReviewAuditDetail = {
   reportGeneratedAt: Date | null;
   version: number;
   publishedAt: Date | null;
+  // ADR-0011 — surfaced so the reviewer knows whether findings already carry an
+  // AI-assigned severity or are still waiting on classifyFinding's fallback.
+  aiState: (typeof audits.aiState.enumValues)[number] | null;
 };
 
 // Loads one audit scoped to the reviewing org — never trusts a bare id across orgs.
@@ -29,6 +32,7 @@ export async function getAuditForReview(orgId: string, auditId: string): Promise
       reportGeneratedAt: audits.reportGeneratedAt,
       version: audits.version,
       publishedAt: audits.publishedAt,
+      aiState: audits.aiState,
     })
     .from(audits)
     .innerJoin(outlets, eq(outlets.id, audits.outletId))

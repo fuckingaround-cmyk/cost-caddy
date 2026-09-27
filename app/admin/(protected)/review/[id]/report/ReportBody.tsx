@@ -5,6 +5,7 @@ import { RevenueMatrix } from './RevenueMatrix';
 import { CompositionDonut } from './CompositionDonut';
 import { CostingTable, SectionHeading } from './CostingTable';
 import { ComplianceSection } from './ComplianceSection';
+import { EvidenceRegisterSection } from './EvidenceRegisterSection';
 
 export interface PublishBadge {
   version: number;
@@ -25,7 +26,7 @@ export function ReportBody({
   // ComplianceSection's 'use client' EvidenceThumb outside Next's own RSC pipeline.
   interactive?: boolean;
 }) {
-  const { audit, draft, costing, departments, salesSlices, costSlices } = vm;
+  const { audit, draft, costing, departments, evidenceRegisters, salesSlices, costSlices } = vm;
 
   // Ported from the design as real flags, not omitted — no story yet asks an admin to
   // hide either, so both default on (DESIGN.md UX-016).
@@ -92,6 +93,7 @@ export function ReportBody({
 
       <CostingTable breakdown={costing} />
       <ComplianceSection departments={departments} showSummaryRibbon={showSummaryRibbon} interactive={interactive} />
+      <EvidenceRegisterSection groups={evidenceRegisters} />
     </>
   );
 }

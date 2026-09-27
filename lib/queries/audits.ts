@@ -52,7 +52,7 @@ export type AuditorAuditRow = {
   status: (typeof audits.status.enumValues)[number];
   periodEnd: string;
   submittedAt: Date | null;
-  polishState: (typeof audits.polishState.enumValues)[number] | null;
+  aiState: (typeof audits.aiState.enumValues)[number] | null;
   outletName: string;
   templateName: string;
   itemsDone: number;
@@ -69,7 +69,7 @@ export async function listAuditorAudits(orgId: string, auditorId: string): Promi
       status: audits.status,
       periodEnd: audits.periodEnd,
       submittedAt: audits.submittedAt,
-      polishState: audits.polishState,
+      aiState: audits.aiState,
       outletName: outlets.name,
       templateName: templates.name,
     })
@@ -224,6 +224,10 @@ export type AuditItemFileRow = {
   name: string;
   meta: string | null;
   storagePath: string;
+  // B7/ADR-0012 — evidence-photo table extraction.
+  evidenceType: (typeof auditItemFiles.evidenceType.enumValues)[number] | null;
+  extractionStatus: (typeof auditItemFiles.extractionStatus.enumValues)[number] | null;
+  extractedTable: { columns: string[]; rows: string[][] } | null;
 };
 
 // B4 — previously-uploaded photos, so an in-progress audit reopens with everything
@@ -237,6 +241,9 @@ export async function getAuditItemFiles(auditId: string): Promise<AuditItemFileR
       name: auditItemFiles.name,
       meta: auditItemFiles.meta,
       storagePath: auditItemFiles.storagePath,
+      evidenceType: auditItemFiles.evidenceType,
+      extractionStatus: auditItemFiles.extractionStatus,
+      extractedTable: auditItemFiles.extractedTable,
     })
     .from(auditItemFiles)
     .innerJoin(auditItems, eq(auditItems.id, auditItemFiles.auditItemId))

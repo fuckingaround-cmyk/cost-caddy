@@ -6,12 +6,30 @@ import { buildCostingBreakdown, type CostingBreakdown } from './costingBreakdown
 import { figureValue } from './figure';
 import type { DonutSlice } from '@/app/admin/(protected)/review/[id]/report/CompositionDonut';
 import type { ComplianceItem, Department } from '@/app/admin/(protected)/review/[id]/report/ComplianceSection';
+import { EVIDENCE_PHOTO_TYPE_LABELS, type EvidencePhotoType } from '@/lib/evidence/types';
+
+export interface EvidenceRegisterTable {
+  id: string;
+  checkpointLabel: string;
+  department: string;
+  photoName: string;
+  photoUrl: string;
+  columns: string[];
+  rows: string[][];
+}
+
+export interface EvidenceRegisterGroup {
+  evidenceType: EvidencePhotoType;
+  label: string;
+  tables: EvidenceRegisterTable[];
+}
 
 export interface ReportViewModel {
   audit: ReviewAuditDetail;
   draft: FinancialReportDraft;
   costing: CostingBreakdown;
   departments: Department[];
+  evidenceRegisters: EvidenceRegisterGroup[];
   salesSlices: DonutSlice[];
   costSlices: DonutSlice[];
 }
@@ -77,6 +95,31 @@ export async function loadReportViewModel(orgId: string, auditId: string): Promi
     dept.items.push(complianceItem);
   }
 
+  // B7/ADR-0012 — grouped by evidence type across the whole audit (not per checklist
+  // row) into its own report section (EvidenceRegisterSection), separate from the
+  // compliance matrix's Evidence column, which keeps showing plain thumbnails unchanged.
+  const evidenceRegisters: EvidenceRegisterGroup[] = [];
+  for (const it of items) {
+    const files = itemFiles.filter((f) => f.auditItemId === it.id && f.extractionStatus === 'extracted' && f.extractedTable);
+    for (const f of files) {
+      const evidenceType = f.evidenceType as EvidencePhotoType;
+      let group = evidenceRegisters.find((g) => g.evidenceType === evidenceType);
+      if (!group) {
+        group = { evidenceType, label: EVIDENCE_PHOTO_TYPE_LABELS[evidenceType], tables: [] };
+        evidenceRegisters.push(group);
+      }
+      group.tables.push({
+        id: f.id,
+        checkpointLabel: it.label,
+        department: it.cat,
+        photoName: f.name,
+        photoUrl: await createSignedUrl(f.storagePath, REPORT_EVIDENCE_URL_TTL_SECONDS).catch(() => ''),
+        columns: f.extractedTable!.columns,
+        rows: f.extractedTable!.rows,
+      });
+    }
+  }
+
   const kitchenNet = figureValue(draft.revenueMatrix.rows.find((r) => r.key === 'kitchen')?.netSales ?? { status: 'needs-data' });
   const barNet = figureValue(draft.revenueMatrix.rows.find((r) => r.key === 'bar')?.netSales ?? { status: 'needs-data' });
   const taxes = figureValue(draft.kpis.totalTaxes);
@@ -97,5 +140,5 @@ export async function loadReportViewModel(orgId: string, auditId: string): Promi
     { label: 'Non-commercial cost', value: ncCost ?? 0, color: 'var(--report-chart-rust-4)' },
   ];
 
-  return { audit, draft, costing, departments, salesSlices, costSlices };
+  return { audit, draft, costing, departments, evidenceRegisters, salesSlices, costSlices };
 }

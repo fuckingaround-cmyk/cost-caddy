@@ -2,6 +2,7 @@ import {
   boolean,
   date,
   integer,
+  jsonb,
   numeric,
   pgTable,
   text,
@@ -10,7 +11,10 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import {
+  aiStateEnum,
   auditStatusEnum,
+  evidenceExtractionStatusEnum,
+  evidencePhotoTypeEnum,
   fileKindEnum,
   itemStatusEnum,
   metricCostGroupEnum,
@@ -20,7 +24,6 @@ import {
   metricUnitEnum,
   opFileParseStatusEnum,
   operationalFileTypeEnum,
-  polishStateEnum,
   resolutionStatusEnum,
   severityEnum,
 } from './_enums';
@@ -57,7 +60,9 @@ export const audits = pgTable('audits', {
   reportGeneratedAt: timestamp('report_generated_at', { withTimezone: true }),
   publishedAt: timestamp('published_at', { withTimezone: true }),
   version: integer('version').notNull().default(0),
-  polishState: polishStateEnum('polish_state'),
+  // ADR-0011: covers the whole submit-time AI job (remark polish + severity scoring),
+  // not just prose polish — the column keeps its original DB name across the rename.
+  aiState: aiStateEnum('polish_state'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -125,16 +130,21 @@ export const auditItems = pgTable(
     status: itemStatusEnum('status').notNull().default('pending'),
     remark: text('remark').notNull().default(''),
     naReason: text('na_reason'),
-    // Set by the reviewer only, never in the field (fail only).
+    // Set by DeepSeek at submit (ADR-0011; fail only) — classifyFinding (C3) is now
+    // only a fallback for whatever the AI job didn't reach. Still reviewer-editable.
     severity: severityEnum('severity'),
     impact: text('impact'),
     correctiveAction: text('corrective_action'),
     sla: text('sla'),
     ownership: text('ownership'),
     resolutionStatus: resolutionStatusEnum('resolution_status'),
-    // Set by report generation (C3).
+    // Set by report generation (C3), or by the submit-time AI job (ADR-0011).
     refId: text('ref_id'),
     category: text('category'),
+    // Raw structured DeepSeek output for this item (ADR-0011) — a superset of the
+    // discrete columns above, kept so a future report-layout change can read more of
+    // what the model already said without re-running scoring or touching this schema.
+    aiAssessment: jsonb('ai_assessment'),
     sortOrder: integer('sort_order').notNull().default(0),
   },
   (table) => [uniqueIndex('audit_items_audit_code_unique').on(table.auditId, table.code)],
@@ -177,4 +187,16 @@ export const auditItemFiles = pgTable('audit_item_files', {
   storagePath: text('storage_path').notNull(),
   meta: text('meta'),
   uploadedAt: timestamp('uploaded_at', { withTimezone: true }).notNull().defaultNow(),
+  // Evidence-photo table extraction (B7, ADR-0012). evidenceType is picked by the
+  // auditor (null = not a register photo, or kind='file' — v1 is images only); once set
+  // it queues a Gemini vision extraction. extractionStatus is null until that first
+  // attempt. extractedTable is { columns: string[], rows: string[][] } (rows positional
+  // to columns, not keyed) — a verbatim transcription, reviewer-editable, shown in the
+  // report immediately once extracted (same trust model as AI-assigned severity,
+  // ADR-0011). Retries overwrite; no extraction history is kept.
+  evidenceType: evidencePhotoTypeEnum('evidence_type'),
+  extractionStatus: evidenceExtractionStatusEnum('extraction_status'),
+  extractedTable: jsonb('extracted_table').$type<{ columns: string[]; rows: string[][] }>(),
+  extractionModel: text('extraction_model'),
+  extractedAt: timestamp('extracted_at', { withTimezone: true }),
 });

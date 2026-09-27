@@ -173,15 +173,17 @@ capture is what the review/report pipeline can trust. **Trade-off:** no unsubmit
 admin-side action, which is deliberate.
 
 ### UX-004 — Reviewer sees the submission exactly as captured
-> **Partly superseded by UX-010.** Remarks are no longer verbatim — they are AI-polished on submit. The
-> rest of this entry (the submission is shown as captured and never edited in place; the reviewer sets
-> severity/impact/corrective-action) still holds.
+> **Partly superseded by UX-010.** Remarks are no longer verbatim — they are AI-polished on submit, and
+> since ADR-0011 the finding (severity/category/impact/corrective-action/SLA/ownership) is also AI-assigned
+> at submit, not only after "Generate report." The rest of this entry (the submission is shown as captured
+> and never edited in place; the reviewer can still override every finding field) still holds.
 
 **Decision:** the review screen shows the submission as captured and is never edited in place; the
-reviewer sets severity/impact/corrective-action and generates findings, but the auditor's remarks reach
-the report **unedited**. **Why:** preserves the integrity of the field record and keeps a clean line
-between what was observed (auditor) and what was judged (reviewer). **Trade-off:** reviewer judgements
-live only in the report version, since there is no separate audit trail.
+reviewer can override severity/impact/corrective-action and generate/regenerate findings, but the
+auditor's remarks reach the report **unedited** by the reviewer. **Why:** preserves the integrity of the
+field record and keeps a clean line between what was observed (auditor) and what was judged (reviewer,
+now AI-assisted). **Trade-off:** reviewer judgements live only in the report version, since there is no
+separate audit trail.
 
 ### UX-005 — Report delivered as a version-stamped PDF, admin-delivered (no Client Portal for now)
 **Decision:** the published report is a self-contained, prominently version-stamped PDF
@@ -221,15 +223,22 @@ evidentiary value is in explaining what went wrong. **Trade-off:** reverses `HAN
 required on every point"; a pass is recorded without supporting words. Recorded as R10. (Originally also
 named `observation` — see UX-024.)
 
-### UX-010 — AI polishes remarks on submit *(supersedes UX-004 on the remarks point)*
-**Decision:** submitting queues a job that rewrites every non-pass remark into report prose, and the
-polished text **replaces** the raw remark. No verbatim copy is retained. The model rewrites prose only and
-never touches a number. A failed polish never blocks the submit. **Why:** field shorthand typed on a phone
-is not a client deliverable, and polishing at submit means the reviewer opens an already-readable
-submission. **Trade-off — the significant one:** there is nothing to revert to if a polish distorts
-meaning, and the report is no longer a quotation of what was observed. The reviewer's correction on the
-review screen becomes the only safety net. UX-004's other half — the submission is shown as captured and
-never edited in place — still holds. Full reasoning in **ADR-0004**; recorded as R11 in `EXECUTION.md`.
+### UX-010 — AI polishes remarks and scores severity on submit *(supersedes UX-004 on the remarks point)*
+**Decision:** submitting queues a job (now DeepSeek, ADR-0011; was Anthropic, ADR-0004) that rewrites every
+non-pass remark into report prose — the polished text **replaces** the raw remark, no verbatim copy
+retained — and, for every Fail item, also assigns severity/category/impact/corrective-action/SLA/ownership
+against a defined scoring rubric (`lib/ai/severityRubric.ts`). The model rewrites prose only and never
+touches a number that appears in the report; severity classification is a stated exception to that rule,
+not a silent one (see ADR-0011). A failed or timed-out job never blocks the submit; the deterministic
+classifier (`classify.ts`) then acts as the fallback for any Fail item the AI job didn't reach, at the next
+"Generate report." **Why:** field shorthand typed on a phone is not a client deliverable, and scoring
+severity at submit means the reviewer opens a submission whose findings are already there, not one that
+needs a "Generate report" click first. **Trade-off — the significant one:** there is nothing to revert the
+remark to if a polish distorts meaning, and the report is no longer a quotation of what was observed. The
+reviewer can still override every finding field, severity included — that override remains the safety net
+for a wrong AI judgment, same as it always was for the rule-based classifier. UX-004's other half — the
+submission is shown as captured and never edited in place — still holds. Full reasoning in **ADR-0004** /
+**ADR-0011**; recorded as R11 in `EXECUTION.md`.
 
 ### UX-011 — Departments collapse and expand (B3)
 **Decision:** each department in the checklist is its own collapsible section, one card open by default
@@ -437,3 +446,21 @@ revocation short of deleting the file. Considered and rejected: a report-token-g
 (more correct/revocable, more build cost — the documented fallback if a real Client Portal ever needs
 this) and a public bucket (reverses the "never public" storage invariant for no cost benefit). Scope:
 new publishes only — already-published PDFs keep their original, now-expired links. See ADR-0009.
+
+### UX-026 — Extracted evidence tables get their own report section, not a row nested under the compliance matrix (ADR-0012)
+**Decision:** a Gemini-extracted evidence table (a discount register, voids log, etc.) renders in a new,
+full-width **"Section 3 · Evidence Registers"** (`EvidenceRegisterSection.tsx`), appended after the
+compliance matrix and grouped by evidence type across the whole audit — one card per type, one sub-table
+per extracted photo inside it. It reuses the existing **"Report table / KPI strip"** token verbatim (12px
+cells, `#e4e8ee` rules, 10.5px/600 uppercase `#6b7686` header, figures right-aligned mono) — no new token
+added. The compliance matrix's Evidence column is unchanged: every photo, table-bearing or not, keeps
+rendering as today's plain thumbnail there. **Why:** a 7+ column extracted table doesn't fit the matrix's
+~70px Evidence cell, and no table in this report's own design (`Audit report v4.dc.html`) nests under
+another row — the Sales & Revenue Matrix and the Cost Analysis breakdown are each their own full-width
+section, so this follows that precedent rather than inventing a new "row expands below itself" pattern.
+Print: per UX-022's established convention, `data-avoid` sits only on each card's small header band; the
+table body is left free to break across pages with the native `<thead>` repeat. **Trade-off:** a photo's
+data now effectively appears twice in different forms — the photo itself (thumbnail, matrix) and its
+transcribed table (new section) — rather than one replacing the other in place; accepted since the two
+serve different purposes (visual evidence vs. readable figures) and a reviewer may want to spot-check the
+table against the original photo, which the table's caption links to directly.

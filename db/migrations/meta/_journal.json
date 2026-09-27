@@ -50,6 +50,20 @@
       "when": 1790067300000,
       "tag": "0006_amazing_frank_castle",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790414310828,
+      "tag": "0007_ancient_doorman",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790513296180,
+      "tag": "0008_evidence_table_extraction",
+      "breakpoints": true
     }
   ]
 }

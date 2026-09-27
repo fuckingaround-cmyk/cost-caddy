@@ -4,8 +4,10 @@ import type { Dispatch, SetStateAction } from 'react';
 import { NA_REASONS } from '@/lib/checklist/naReasons';
 import { isItemAnswered } from '@/lib/checklist/isItemAnswered';
 import { compressImage } from '@/lib/media/compressImage';
-import { removeItemPhoto, uploadItemPhoto } from '@/lib/actions/checklist';
+import { removeItemPhoto, setEvidencePhotoType, uploadItemPhoto } from '@/lib/actions/checklist';
 import type { AuditItemRow } from '@/lib/queries/audits';
+import { EVIDENCE_PHOTO_TYPES, EVIDENCE_PHOTO_TYPE_LABELS, type EvidencePhotoType } from '@/lib/evidence/types';
+import { suggestedEvidenceType } from '@/lib/evidence/suggest';
 
 type ItemStatus = AuditItemRow['status'];
 
@@ -21,6 +23,10 @@ export interface PhotoEntry {
   name: string;
   meta: string;
   uploading?: boolean;
+  kind?: 'image' | 'file';
+  // B7/ADR-0012 — the recipe the auditor picked for this photo; undefined while
+  // uploading, null once uploaded with no type picked (not a register photo).
+  evidenceType?: EvidencePhotoType | null;
 }
 
 export interface ChecklistItemState extends AuditItemRow {
@@ -100,7 +106,7 @@ export function ChecklistStep({
     );
   };
 
-  const addPhotos = async (itemId: string, files: FileList | null) => {
+  const addPhotos = async (itemId: string, checkpointCode: string, files: FileList | null) => {
     if (!files || files.length === 0) return;
     // Sequential, not Promise.all — "photos upload one at a time on capture" (B4).
     for (const rawFile of Array.from(files)) {
@@ -115,17 +121,35 @@ export function ChecklistStep({
         const formData = new FormData();
         formData.set('file', prepared);
         const uploaded = await uploadItemPhoto(itemId, formData);
+        // B7/ADR-0012 — a checkpoint can only suggest a default evidence type, never
+        // decide it; applying the suggestion here also fires the extraction.
+        const evidenceType = uploaded.kind === 'image' ? suggestedEvidenceType(checkpointCode) : null;
         setItems((prev) =>
           prev.map((it) =>
             it.id === itemId
-              ? { ...it, photos: it.photos.map((p) => (p.id === tempId ? { id: uploaded.id, name: uploaded.name, meta: uploaded.meta } : p)) }
+              ? {
+                  ...it,
+                  photos: it.photos.map((p) =>
+                    p.id === tempId ? { id: uploaded.id, name: uploaded.name, meta: uploaded.meta, kind: uploaded.kind, evidenceType } : p,
+                  ),
+                }
               : it,
           ),
         );
+        if (evidenceType) void setEvidencePhotoType(uploaded.id, evidenceType);
       } catch {
         setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, photos: it.photos.filter((p) => p.id !== tempId) } : it)));
       }
     }
+  };
+
+  const changeEvidenceType = (itemId: string, photoId: string, evidenceType: EvidencePhotoType | null) => {
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === itemId ? { ...it, photos: it.photos.map((p) => (p.id === photoId ? { ...p, evidenceType } : p)) } : it,
+      ),
+    );
+    void setEvidencePhotoType(photoId, evidenceType);
   };
 
   const removePhoto = async (itemId: string, photoId: string) => {
@@ -220,8 +244,9 @@ export function ChecklistStep({
                     onStatus={(s) => setStatus(it.id, s)}
                     onRemarkChange={(remark) => updateItem(it.id, { remark })}
                     onNaReasonChange={(naReason) => updateItem(it.id, { naReason })}
-                    onAddPhotos={(files) => void addPhotos(it.id, files)}
+                    onAddPhotos={(files) => void addPhotos(it.id, it.code, files)}
                     onRemovePhoto={(photoId) => void removePhoto(it.id, photoId)}
+                    onEvidenceTypeChange={(photoId, evidenceType) => changeEvidenceType(it.id, photoId, evidenceType)}
                   />
                 ))}
               </div>
@@ -242,6 +267,7 @@ function ChecklistItemRow({
   onNaReasonChange,
   onAddPhotos,
   onRemovePhoto,
+  onEvidenceTypeChange,
 }: {
   item: ChecklistItemState;
   active: boolean;
@@ -251,6 +277,7 @@ function ChecklistItemRow({
   onNaReasonChange: (v: string) => void;
   onAddPhotos: (files: FileList | null) => void;
   onRemovePhoto: (photoId: string) => void;
+  onEvidenceTypeChange: (photoId: string, evidenceType: EvidencePhotoType | null) => void;
 }) {
   const hasRemark = item.remark.trim() !== '';
 
@@ -333,7 +360,7 @@ function ChecklistItemRow({
             />
           )}
 
-          <PhotoAttach photos={item.photos} onAdd={onAddPhotos} onRemove={onRemovePhoto} />
+          <PhotoAttach photos={item.photos} onAdd={onAddPhotos} onRemove={onRemovePhoto} onEvidenceTypeChange={onEvidenceTypeChange} />
         </div>
       )}
     </div>
@@ -344,10 +371,12 @@ function PhotoAttach({
   photos,
   onAdd,
   onRemove,
+  onEvidenceTypeChange,
 }: {
   photos: PhotoEntry[];
   onAdd: (files: FileList | null) => void;
   onRemove: (photoId: string) => void;
+  onEvidenceTypeChange: (photoId: string, evidenceType: EvidencePhotoType | null) => void;
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -386,6 +415,21 @@ function PhotoAttach({
                 {p.name}
               </div>
               <div style={{ fontSize: 10, color: 'var(--muted-2)' }}>{p.meta}</div>
+              {!p.uploading && p.kind === 'image' && (
+                <select
+                  value={p.evidenceType ?? ''}
+                  onChange={(e) => onEvidenceTypeChange(p.id, e.target.value === '' ? null : (e.target.value as EvidencePhotoType))}
+                  title="Extract this photo as a table?"
+                  style={{ fontSize: 10, border: '1px solid var(--border)', borderRadius: 'var(--radius-control)', padding: '2px 4px', background: 'var(--surface)' }}
+                >
+                  <option value="">Not a register</option>
+                  {EVIDENCE_PHOTO_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {EVIDENCE_PHOTO_TYPE_LABELS[t]}
+                    </option>
+                  ))}
+                </select>
+              )}
               {!p.uploading && (
                 <button
                   type="button"

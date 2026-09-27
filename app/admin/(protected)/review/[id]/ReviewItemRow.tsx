@@ -5,6 +5,8 @@ import { correctAuditItem } from '@/lib/actions/review';
 import { NA_REASONS } from '@/lib/checklist/naReasons';
 import { PhotoLightbox } from './PhotoLightbox';
 import { FindingPanel, type Finding } from './FindingPanel';
+import { EvidenceTablePanel } from './EvidenceTablePanel';
+import type { EvidencePhotoType } from '@/lib/evidence/types';
 
 type ItemStatus = 'pending' | 'pass' | 'fail' | 'na';
 
@@ -27,6 +29,10 @@ export interface ReviewPhoto {
   meta: string | null;
   isImage: boolean;
   url: string;
+  // B7/ADR-0012
+  evidenceType: EvidencePhotoType | null;
+  extractionStatus: 'pending' | 'extracted' | 'failed' | null;
+  extractedTable: { columns: string[]; rows: string[][] } | null;
 }
 
 export interface ReviewItem {
@@ -207,6 +213,12 @@ export function ReviewItemRow({ item, auditId }: { item: ReviewItem; auditId: st
       )}
 
       {item.finding && <FindingPanel itemId={item.id} auditId={auditId} finding={item.finding} />}
+
+      {item.photos
+        .filter((p) => p.evidenceType !== null)
+        .map((p) => (
+          <EvidenceTablePanel key={p.id} auditId={auditId} photo={p} />
+        ))}
     </div>
   );
 }

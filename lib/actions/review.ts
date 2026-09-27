@@ -4,12 +4,13 @@ import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/db';
-import { auditItems, auditOperationalFiles, audits } from '@/db/schema';
+import { auditItemFiles, auditItems, auditOperationalFiles, audits } from '@/db/schema';
 import { requireRole } from '@/lib/auth';
 import { deleteFile, operationalFilePath, uploadFile } from '@/lib/storage';
 import { parseOperationalFile } from '@/lib/operational/parseFile';
 import { NA_REASONS } from '@/lib/checklist/naReasons';
 import { classifyFinding, type Severity } from '@/lib/report/classify';
+import { extractEvidenceTable } from '@/lib/ai/extractEvidenceTable';
 
 async function requireReviewableAudit(auditId: string) {
   const admin = await requireRole('super_admin');
@@ -47,8 +48,8 @@ export async function correctAuditItem(
   // A status correction can turn a former finding into a Pass/N-A, or a former
   // Pass/N-A into a new Fail. Either way any existing finding is stale: clear it so
   // "Pass items carry no severity, impact or action" still holds, and so a status
-  // newly turned Fail is picked up by the next Generate/Regenerate (which only
-  // classifies items with no severity yet).
+  // newly turned Fail is picked up by the next Generate/Regenerate — via classifyFinding
+  // (ADR-0011: now a fallback, since there's no per-item submit-time AI call to redo).
   await db
     .update(auditItems)
     .set({
@@ -151,10 +152,13 @@ export async function replaceOperationalFile(fileId: string, auditId: string, fo
   revalidatePath(`/admin/review/${auditId}`);
 }
 
-// C3 — every Fail becomes a finding (EXECUTION.md C3, ported from Super Admin
-// Flow.dc.html's generateReport/enhanceAll ~line 1611/1842). Idempotent: only
-// items with no severity yet are classified, so re-running after a reviewer has
-// already edited a finding never overwrites their edit — same as the mock's
+// C3 — every Fail becomes a finding. Since ADR-0011, DeepSeek already assigns findings
+// for most Fail items at submit time (lib/ai/scoreAuditRemarks.ts); this deterministic
+// classifier (EXECUTION.md C3, ported from Super Admin Flow.dc.html's
+// generateReport/enhanceAll ~line 1611/1842) is now the fallback for whatever that AI
+// job didn't reach (it failed/timed out, or the item was corrected into Fail after
+// submit). Idempotent: only items with no severity yet are classified, so re-running
+// never overwrites an AI-set or reviewer-edited finding — same as the mock's
 // `it.severity || r.sev` pattern. Pass/N-A items are never touched (no severity,
 // impact or action — EXECUTION.md C3 done-when).
 export async function generateReport(auditId: string): Promise<void> {
@@ -209,6 +213,47 @@ export async function updateFinding(
   }
 
   await db.update(auditItems).set(fields).where(eq(auditItems.id, itemId));
+
+  revalidatePath(`/admin/review/${auditId}`);
+}
+
+async function requireOwnedEvidenceFile(fileId: string, auditId: string) {
+  const { admin } = await requireReviewableAudit(auditId);
+  const [file] = await db
+    .select({ id: auditItemFiles.id })
+    .from(auditItemFiles)
+    .innerJoin(auditItems, eq(auditItems.id, auditItemFiles.auditItemId))
+    .where(and(eq(auditItemFiles.id, fileId), eq(auditItems.auditId, auditId)))
+    .limit(1);
+  if (!file) throw new Error('Not found');
+  return { admin };
+}
+
+// B7/ADR-0012 — every extracted cell is reviewer-editable, exactly as updateFinding
+// already allows for severity: no separate confirm step, since the table is already
+// live in the report the moment extraction succeeds. Also covers an admin manually
+// filling in a table after a failed extraction.
+export async function updateEvidenceTable(
+  fileId: string,
+  auditId: string,
+  table: { columns: string[]; rows: string[][] },
+): Promise<void> {
+  await requireOwnedEvidenceFile(fileId, auditId);
+
+  await db
+    .update(auditItemFiles)
+    .set({ extractedTable: table, extractionStatus: 'extracted' })
+    .where(eq(auditItemFiles.id, fileId));
+
+  revalidatePath(`/admin/review/${auditId}`);
+}
+
+// Synchronous, unlike the fire-and-forget capture-time/submit-time triggers — the admin
+// is waiting on this one.
+export async function retryEvidenceExtraction(fileId: string, auditId: string): Promise<void> {
+  await requireOwnedEvidenceFile(fileId, auditId);
+
+  await extractEvidenceTable(fileId);
 
   revalidatePath(`/admin/review/${auditId}`);
 }

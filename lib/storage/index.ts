@@ -45,6 +45,15 @@ export async function createSignedUrl(
   return data.signedUrl;
 }
 
+// Gemini's vision API takes inline base64 bytes, not a fetchable URL (ADR-0012) — a
+// signed URL is no use here, unlike every other read in this module.
+export async function downloadFile(path: string): Promise<ArrayBuffer> {
+  const client = getStorageClient();
+  const { data, error } = await client.storage.from(STORAGE_BUCKET).download(path);
+  if (error) throw error;
+  return data.arrayBuffer();
+}
+
 export async function deleteFile(path: string): Promise<void> {
   const client = getStorageClient();
   const { error } = await client.storage.from(STORAGE_BUCKET).remove([path]);
