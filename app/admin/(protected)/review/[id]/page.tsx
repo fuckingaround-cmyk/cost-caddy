@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
-import { getAuditForReview, listOperationalFiles, type ReviewAuditDetail } from '@/lib/queries/review';
+import { getAuditForReview, getEvidenceFindings, listOperationalFiles, type ReviewAuditDetail } from '@/lib/queries/review';
 import { getAuditItemFiles, getAuditItems, getAuditMetricDefs, getAuditMetricValues } from '@/lib/queries/audits';
 import { metricSections } from '@/lib/calc';
 import { createSignedUrl } from '@/lib/storage';
@@ -34,13 +34,16 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
   // so the canonical view moves to the report itself.
   if (audit.status === 'published') redirect(`/admin/review/${id}/report`);
 
-  const [defs, values, items, itemFiles, opFiles] = await Promise.all([
+  const [defs, values, items, itemFiles, opFiles, evidenceFindings] = await Promise.all([
     getAuditMetricDefs(id),
     getAuditMetricValues(id),
     getAuditItems(id),
     getAuditItemFiles(id),
     listOperationalFiles(id),
+    getEvidenceFindings(id),
   ]);
+
+  const findingsByType = new Map(evidenceFindings.map((f) => [f.evidenceType, f]));
 
   const sections = defs.length > 0 ? metricSections(defs, values) : [];
 
@@ -66,6 +69,16 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
         status: it.status,
         remark: it.remark,
         naReason: it.naReason,
+        section: it.section,
+        // ADR-0015 — the generated (admin-editable) write-up for a POS report item.
+        register:
+          it.section === 'pos_report' && it.reportType
+            ? {
+                evidenceType: it.reportType,
+                findings: findingsByType.get(it.reportType)?.findings ?? '',
+                correctiveMeasures: findingsByType.get(it.reportType)?.correctiveMeasures ?? '',
+              }
+            : null,
         photos,
         finding:
           it.severity && it.impact !== null && it.correctiveAction !== null && it.sla !== null && it.ownership !== null && it.resolutionStatus
@@ -199,9 +212,24 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
 
       {financialDraft && <FinancialSummaryPanel draft={financialDraft} />}
 
-      {reviewItems.map((it) => (
-        <ReviewItemRow key={it.id} item={it} auditId={id} />
-      ))}
+      {reviewItems
+        .filter((it) => it.section === 'checklist')
+        .map((it) => (
+          <ReviewItemRow key={it.id} item={it} auditId={id} />
+        ))}
+
+      {reviewItems.some((it) => it.section === 'pos_report') && (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--navy-700)', padding: '26px 0 4px' }}>
+            POS Reports
+          </div>
+          {reviewItems
+            .filter((it) => it.section === 'pos_report')
+            .map((it) => (
+              <ReviewItemRow key={it.id} item={it} auditId={id} />
+            ))}
+        </>
+      )}
     </div>
   );
 }

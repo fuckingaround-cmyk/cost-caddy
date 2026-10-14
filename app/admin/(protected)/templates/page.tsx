@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireRole } from '@/lib/auth';
 import { listTemplates } from '@/lib/queries/templates';
+import { TemplateActions } from './TemplateActions';
 
 // A4 — Templates library.
 export default async function TemplatesPage() {
@@ -39,34 +40,30 @@ export default async function TemplatesPage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-7)' }}>
         {templates.map((t) => (
-          <Link
+          <div
             key={t.id}
-            href={`/admin/templates/${t.id}`}
             style={{
               border: '1px solid var(--border-card)',
               borderRadius: 'var(--radius-panel)',
               background: 'var(--surface)',
               overflow: 'hidden',
-              textDecoration: 'none',
-              color: 'inherit',
-              display: 'block',
             }}
           >
-            <div style={{ padding: '15px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-              <div style={{ minWidth: 0 }}>
+            <div style={{ padding: '15px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+              <Link href={`/admin/templates/${t.id}`} style={{ minWidth: 0, textDecoration: 'none', color: 'inherit', flex: 1 }}>
                 <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--navy-900)' }}>{t.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--hint)', marginTop: 3 }}>Reusable across restaurants</div>
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--navy-700)', whiteSpace: 'nowrap' }}>
-                Edit template &rsaquo;
-              </div>
+                <div style={{ fontSize: 12, color: 'var(--hint)', marginTop: 3 }}>
+                  Reusable across restaurants · <span style={{ fontWeight: 600, color: 'var(--navy-700)' }}>Edit template &rsaquo;</span>
+                </div>
+              </Link>
+              <TemplateActions templateId={t.id} auditCount={t.auditCount} />
             </div>
             <div style={{ padding: '11px 18px', borderTop: '1px solid var(--surface-alt-1)', background: 'var(--surface-alt-1)', display: 'flex', gap: 22, flexWrap: 'wrap' }}>
               <Stat label="Metrics" value={t.metricCount} />
               <Stat label="Departments" value={t.departmentCount} />
               <Stat label="Checkpoints" value={t.checkpointCount} />
             </div>
-          </Link>
+          </div>
         ))}
       </div>
     </div>

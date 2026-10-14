@@ -6,6 +6,8 @@ import { NA_REASONS } from '@/lib/checklist/naReasons';
 import { PhotoLightbox } from './PhotoLightbox';
 import { FindingPanel, type Finding } from './FindingPanel';
 import { EvidenceTablePanel } from './EvidenceTablePanel';
+import { EvidenceFindingsPanel } from './EvidenceFindingsPanel';
+import { EVIDENCE_PHOTO_TYPE_LABELS } from '@/lib/evidence/types';
 import type { EvidencePhotoType } from '@/lib/evidence/types';
 
 type ItemStatus = 'pending' | 'pass' | 'fail' | 'na';
@@ -42,6 +44,8 @@ export interface ReviewItem {
   status: ItemStatus;
   remark: string;
   naReason: string | null;
+  section: 'checklist' | 'pos_report';
+  register: { evidenceType: EvidencePhotoType; findings: string; correctiveMeasures: string } | null;
   photos: ReviewPhoto[];
   finding: Finding | null;
 }
@@ -219,6 +223,17 @@ export function ReviewItemRow({ item, auditId }: { item: ReviewItem; auditId: st
         .map((p) => (
           <EvidenceTablePanel key={p.id} auditId={auditId} photo={p} />
         ))}
+
+      {item.register && (
+        <EvidenceFindingsPanel
+          auditId={auditId}
+          itemId={item.id}
+          evidenceType={item.register.evidenceType}
+          label={EVIDENCE_PHOTO_TYPE_LABELS[item.register.evidenceType]}
+          findings={item.register.findings}
+          correctiveMeasures={item.register.correctiveMeasures}
+        />
+      )}
     </div>
   );
 }

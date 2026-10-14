@@ -1,11 +1,14 @@
-import { asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import {
+  audits,
   templateChecklistPoints,
   templateDepartments,
   templateMetrics,
+  templatePosReports,
   templates,
 } from '@/db/schema';
+import type { PosReportType } from '@/lib/evidence/types';
 
 export type TemplateRow = {
   id: string;
@@ -13,6 +16,7 @@ export type TemplateRow = {
   metricCount: number;
   departmentCount: number;
   checkpointCount: number;
+  auditCount: number;
 };
 
 export async function listTemplates(orgId: string): Promise<TemplateRow[]> {
@@ -26,9 +30,10 @@ export async function listTemplates(orgId: string): Promise<TemplateRow[]> {
       metricCount: sql<number>`(select count(*) from ${templateMetrics} where ${templateMetrics.templateId} = ${sql.raw('"templates"."id"')})`,
       departmentCount: sql<number>`(select count(*) from ${templateDepartments} where ${templateDepartments.templateId} = ${sql.raw('"templates"."id"')})`,
       checkpointCount: sql<number>`(select count(*) from ${templateChecklistPoints} where ${templateChecklistPoints.templateId} = ${sql.raw('"templates"."id"')})`,
+      auditCount: sql<number>`(select count(*) from ${audits} where ${audits.templateId} = ${sql.raw('"templates"."id"')})`,
     })
     .from(templates)
-    .where(eq(templates.orgId, orgId))
+    .where(and(eq(templates.orgId, orgId), isNull(templates.archivedAt)))
     .orderBy(templates.createdAt);
 
   return rows.map((r) => ({
@@ -36,6 +41,7 @@ export async function listTemplates(orgId: string): Promise<TemplateRow[]> {
     metricCount: Number(r.metricCount),
     departmentCount: Number(r.departmentCount),
     checkpointCount: Number(r.checkpointCount),
+    auditCount: Number(r.auditCount),
   }));
 }
 
@@ -61,11 +67,12 @@ export type TemplateDetail = {
   name: string;
   metrics: TemplateMetricInput[];
   departments: TemplateDepartmentInput[];
+  posReports: PosReportType[];
 };
 
 export async function getTemplate(orgId: string, id: string): Promise<TemplateDetail | null> {
   const [t] = await db.select().from(templates).where(eq(templates.id, id)).limit(1);
-  if (!t || t.orgId !== orgId) return null;
+  if (!t || t.orgId !== orgId || t.archivedAt) return null;
 
   const metrics = await db
     .select()
@@ -85,9 +92,16 @@ export async function getTemplate(orgId: string, id: string): Promise<TemplateDe
     .where(eq(templateChecklistPoints.templateId, id))
     .orderBy(asc(templateChecklistPoints.sortOrder));
 
+  const posReports = await db
+    .select({ reportType: templatePosReports.reportType })
+    .from(templatePosReports)
+    .where(eq(templatePosReports.templateId, id))
+    .orderBy(asc(templatePosReports.sortOrder));
+
   return {
     id: t.id,
     name: t.name,
+    posReports: posReports.map((r) => r.reportType as PosReportType),
     metrics: metrics.map((m) => ({
       metricKey: m.metricKey,
       label: m.label,

@@ -32,8 +32,12 @@ export interface RevenueGroupTotals {
   apc: ReportFigure; // grossSale / covers
 }
 
+// One row per sales metric, in template order and under the template's own label
+// (e.g. Kitchen, Liquor, Beverage) — no fixed Kitchen/Bar grouping in the matrix.
+// `revGroup` is kept so the charts can still total by kitchen vs bar.
 export interface RevenueGroupRow extends RevenueGroupTotals {
-  key: RevenueGroupKey;
+  key: string; // the sales metric's id
+  revGroup: RevenueGroupKey;
 }
 
 export interface FinancialDraftKpis {
@@ -86,43 +90,46 @@ function sumFigure(defs: MetricDef[], values: MetricValues, ids: string[]): Repo
   return figure(total);
 }
 
-function buildGroupRow(
-  key: RevenueGroupKey,
-  label: string,
+function buildSalesRow(
+  def: MetricDef,
   defs: MetricDef[],
   values: MetricValues,
-  groupSales: ReportFigure,
-  totalNetSaleAcrossGroups: ReportFigure,
-  totalDiscounts: ReportFigure,
+  totalNetSaleAcrossRows: ReportFigure,
   totalTaxes: ReportFigure,
   totalCharges: ReportFigure,
   covers: ReportFigure,
 ): RevenueGroupRow {
+  const revGroup: RevenueGroupKey = def.revGroup === 'bar' ? 'bar' : 'kitchen';
+  const sales = figure(parseMetricValue(values[def.id]));
+  const sameGroup = defs.filter((d) => d.section === 'sales' && (d.revGroup === 'bar' ? 'bar' : 'kitchen') === revGroup);
+  const groupSales = sumFigure(defs, values, sameGroup.map((d) => d.id));
+
   const discountRows = defs.filter((d) => d.section === 'discount');
-  const taggedIds = discountRows.filter((d) => d.revGroup === key).map((d) => d.id);
-  const untaggedIds = discountRows.filter((d) => !d.revGroup).map((d) => d.id);
+  const taggedDiscount = sumFigure(defs, values, discountRows.filter((d) => d.revGroup === revGroup).map((d) => d.id));
+  const untaggedDiscount = sumFigure(defs, values, discountRows.filter((d) => !d.revGroup).map((d) => d.id));
 
-  const taggedDiscount = sumFigure(defs, values, taggedIds);
-  const share = divideFigures(groupSales, totalNetSaleAcrossGroups);
-  const untaggedTotal = sumFigure(defs, values, untaggedIds);
-  const allocatedUntagged = multiplyFigures(untaggedTotal, share);
+  // Discounts tagged to a revenue group are shared among that group's rows by sales; untagged
+  // discounts are shared among all rows by sales.
+  const shareOfGroup = divideFigures(sales, groupSales);
+  const share = divideFigures(sales, totalNetSaleAcrossRows);
+  const allocatedTagged = multiplyFigures(taggedDiscount, shareOfGroup);
+  const allocatedUntagged = multiplyFigures(untaggedDiscount, share);
 
-  // A group's discount is "needs data" only when neither a direct tag nor a share of
-  // the untagged pool can be resolved — not just because one of the two is absent.
+  // "Needs data" only when neither a direct tag nor a share of the untagged pool resolves.
   const discount: ReportFigure =
-    taggedDiscount.status === 'ok' || allocatedUntagged.status === 'ok'
-      ? figure((taggedDiscount.status === 'ok' ? taggedDiscount.value : 0) + (allocatedUntagged.status === 'ok' ? allocatedUntagged.value : 0))
+    allocatedTagged.status === 'ok' || allocatedUntagged.status === 'ok'
+      ? figure((allocatedTagged.status === 'ok' ? allocatedTagged.value : 0) + (allocatedUntagged.status === 'ok' ? allocatedUntagged.value : 0))
       : discountRows.length === 0
         ? figure(0) // template has no discount metrics at all — nothing to allocate, not missing data
         : { status: 'needs-data' };
 
   const taxes = multiplyFigures(totalTaxes, share);
   const serviceCharge = multiplyFigures(totalCharges, share);
-  const netSales = subtractFigures(groupSales, discount);
+  const netSales = subtractFigures(sales, discount);
   const grossSale = addFigures(addFigures(netSales, taxes), serviceCharge);
   const apc = divideFigures(grossSale, covers);
 
-  return { key, label, sales: groupSales, discount, netSales, taxes, serviceCharge, grossSale, apc };
+  return { key: def.id, revGroup, label: def.label, sales, discount, netSales, taxes, serviceCharge, grossSale, apc };
 }
 
 export function buildFinancialReportDraft(
@@ -142,15 +149,9 @@ export function buildFinancialReportDraft(
   const totalCharges = figure(c.totalCharges);
   const grossSale = figure(c.grossSale);
 
-  const rows: RevenueGroupRow[] = [];
-  const hasKitchenSales = defs.some((d) => d.section === 'sales' && d.revGroup !== 'bar');
-  const hasBarSales = defs.some((d) => d.section === 'sales' && d.revGroup === 'bar');
-  if (hasKitchenSales) {
-    rows.push(buildGroupRow('kitchen', 'Kitchen', defs, vals, kitchenSale, netSale, totalDiscounts, totalTaxes, totalCharges, covers));
-  }
-  if (hasBarSales) {
-    rows.push(buildGroupRow('bar', 'Bar', defs, vals, barSale, netSale, totalDiscounts, totalTaxes, totalCharges, covers));
-  }
+  const rows = defs
+    .filter((d) => d.section === 'sales')
+    .map((d) => buildSalesRow(d, defs, vals, netSale, totalTaxes, totalCharges, covers));
 
   const total: RevenueGroupTotals = {
     label: 'Total',

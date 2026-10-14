@@ -12,6 +12,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import {
   aiStateEnum,
+  auditItemSectionEnum,
   auditStatusEnum,
   evidenceExtractionStatusEnum,
   evidencePhotoTypeEnum,
@@ -127,6 +128,11 @@ export const auditItems = pgTable(
     label: text('label').notNull(),
     guidance: text('guidance'),
     freeform: boolean('freeform').notNull().default(false),
+    // ADR-0015: 'pos_report' items come from the template's POS Report section; their
+    // reportType is the register type (and the evidence type of every photo attached).
+    // They are excluded from the compliance matrix/scoring and get no per-item finding.
+    section: auditItemSectionEnum('section').notNull().default('checklist'),
+    reportType: evidencePhotoTypeEnum('report_type'),
     status: itemStatusEnum('status').notNull().default('pending'),
     remark: text('remark').notNull().default(''),
     naReason: text('na_reason'),
@@ -200,3 +206,28 @@ export const auditItemFiles = pgTable('audit_item_files', {
   extractionModel: text('extraction_model'),
   extractedAt: timestamp('extracted_at', { withTimezone: true }),
 });
+
+// One Findings-and-Observations + Corrective-measures write-up per evidence type per
+// audit (ADR-0013) — not per photo/row, so this is keyed on (auditId, evidenceType),
+// separate from auditItemFiles. The reviewer writes the raw draft; "Polish with AI"
+// (DeepSeek, lib/ai/polishEvidenceFindings.ts) rewrites it in place, grounded in that
+// type's extracted table rows — same "polish replaces raw, no verbatim kept" pattern as
+// ADR-0004's remark polish, just reviewer-triggered instead of automatic at submit.
+export const auditEvidenceFindings = pgTable(
+  'audit_evidence_findings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => orgs.id),
+    auditId: uuid('audit_id')
+      .notNull()
+      .references(() => audits.id),
+    evidenceType: evidencePhotoTypeEnum('evidence_type').notNull(),
+    findings: text('findings').notNull().default(''),
+    correctiveMeasures: text('corrective_measures').notNull().default(''),
+    aiPolishedAt: timestamp('ai_polished_at', { withTimezone: true }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('audit_evidence_findings_audit_type_unique').on(table.auditId, table.evidenceType)],
+);

@@ -21,7 +21,7 @@ export async function listAuditors(orgId: string): Promise<AuditorRow[]> {
     .orderBy(users.createdAt);
 
   const access = await db
-    .select({ userId: auditorOutlets.userId, outletId: auditorOutlets.outletId, outletName: outlets.name })
+    .select({ userId: auditorOutlets.userId, outletId: auditorOutlets.outletId, outletName: outlets.name, outletCity: outlets.city })
     .from(auditorOutlets)
     .innerJoin(outlets, eq(outlets.id, auditorOutlets.outletId))
     .where(eq(auditorOutlets.orgId, orgId));
@@ -36,7 +36,7 @@ export async function listAuditors(orgId: string): Promise<AuditorRow[]> {
       status: u.status,
       lastActiveAt: u.lastActiveAt,
       outletIds: mine.map((m) => m.outletId),
-      outletNames: mine.map((m) => m.outletName),
+      outletNames: mine.map((m) => (m.outletCity ? `${m.outletName} (${m.outletCity})` : m.outletName)),
     };
   });
 }

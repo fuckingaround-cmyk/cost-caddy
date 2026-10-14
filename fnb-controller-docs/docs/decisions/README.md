@@ -21,5 +21,9 @@ and are where *new* decisions get recorded going forward.
 | [0010](0010-pdf-generation-uses-sparticuz-chromium-on-vercel.md) | PDF generation uses `playwright-core` + `@sparticuz/chromium` on Vercel, not full Playwright | accepted | 2026-09-26 |
 | [0011](0011-deepseek-scores-severity-at-submit.md) | DeepSeek scores severity at submit, alongside the remark polish, replacing Anthropic; `classify.ts` becomes a fallback | accepted | 2026-09-26 |
 | [0012](0012-gemini-vision-extracts-evidence-tables.md) | Gemini vision extracts evidence-photo tables (discount registers, void logs) as OCR/data-entry, added alongside DeepSeek | accepted | 2026-09-27 |
+| [0013](0013-reviewer-drafted-findings-polished-for-evidence-registers.md) | Reviewer drafts, DeepSeek polishes, Findings/Corrective Measures per evidence register type — no computed deltas | accepted | 2026-09-27 |
+| [0014](0014-openai-replaces-gemini-for-evidence-extraction.md) | OpenAI (`gpt-4o-mini`) replaces Gemini for evidence-table extraction — Gemini project had zero API quota | accepted | 2026-09-28 |
+| [0015](0015-pos-report-is-a-third-template-section.md) | POS Report is a third template section; register findings are generated at submit by DeepSeek from remark + table | accepted | 2026-09-28 |
+| [0016](0016-destructive-admin-actions-block-archive-or-cascade.md) | Destructive admin actions: restaurant delete blocked by audits, audit delete at any status, template archived when in use | accepted | 2026-09-28 |
 
 Statuses: proposed · accepted · superseded (note which ADR supersedes it).

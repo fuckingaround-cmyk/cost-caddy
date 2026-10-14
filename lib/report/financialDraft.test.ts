@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildFinancialReportDraft } from './financialDraft';
+import { figure } from './figure';
 import type { MetricDef, MetricValues } from '@/lib/calc/types';
 
 // Same seed as lib/calc/metrics.test.ts (Super Admin Flow.dc.html's DEFAULT_METRICS /
@@ -55,6 +56,7 @@ function ok(f: { status: string; value?: number }): number {
 
 describe('buildFinancialReportDraft — MTD_FULL', () => {
   const draft = buildFinancialReportDraft(DEFAULT_METRICS, MTD_FULL, []);
+  const rows = (id: string) => draft.revenueMatrix.rows.find((r) => r.key === id)!;
 
   it('carries F7 totals through as KPIs', () => {
     expect(ok(draft.kpis.covers)).toBe(222);
@@ -68,8 +70,14 @@ describe('buildFinancialReportDraft — MTD_FULL', () => {
   });
 
   it('allocates taxes/service charge/discount pro-rata on each group\'s share of sales', () => {
-    const kitchen = draft.revenueMatrix.rows.find((r) => r.key === 'kitchen')!;
-    const bar = draft.revenueMatrix.rows.find((r) => r.key === 'bar')!;
+    const kitchen = draft.revenueMatrix.rows.find((r) => r.key === 'm_food')!;
+    const bar = {
+      sales: figure(ok(rows('m_liquor').sales) + ok(rows('m_bev').sales)),
+      discount: figure(ok(rows('m_liquor').discount) + ok(rows('m_bev').discount)),
+      taxes: figure(ok(rows('m_liquor').taxes) + ok(rows('m_bev').taxes)),
+      serviceCharge: figure(ok(rows('m_liquor').serviceCharge) + ok(rows('m_bev').serviceCharge)),
+      grossSale: figure(ok(rows('m_liquor').grossSale) + ok(rows('m_bev').grossSale)),
+    };
 
     expect(ok(kitchen.sales)).toBe(165151);
     expect(ok(bar.sales)).toBe(82824);
@@ -82,10 +90,26 @@ describe('buildFinancialReportDraft — MTD_FULL', () => {
   });
 
   it('sums the two group rows\' gross sale back to the audit-wide total', () => {
-    const kitchen = draft.revenueMatrix.rows.find((r) => r.key === 'kitchen')!;
-    const bar = draft.revenueMatrix.rows.find((r) => r.key === 'bar')!;
+    const kitchen = draft.revenueMatrix.rows.find((r) => r.key === 'm_food')!;
+    const bar = {
+      sales: figure(ok(rows('m_liquor').sales) + ok(rows('m_bev').sales)),
+      discount: figure(ok(rows('m_liquor').discount) + ok(rows('m_bev').discount)),
+      taxes: figure(ok(rows('m_liquor').taxes) + ok(rows('m_bev').taxes)),
+      serviceCharge: figure(ok(rows('m_liquor').serviceCharge) + ok(rows('m_bev').serviceCharge)),
+      grossSale: figure(ok(rows('m_liquor').grossSale) + ok(rows('m_bev').grossSale)),
+    };
     expect(ok(kitchen.grossSale) + ok(bar.grossSale)).toBeCloseTo(274999, 1);
     expect(ok(draft.revenueMatrix.total.grossSale)).toBe(274999);
+  });
+
+  it('has one matrix row per sales metric, labelled as the template names it', () => {
+    const rows = draft.revenueMatrix.rows;
+    expect(rows.map((r) => r.label)).toEqual(['Food Sales', 'Liquor', 'Beverage Sales']);
+    expect(rows.map((r) => r.key)).toEqual(['m_food', 'm_liquor', 'm_bev']);
+    expect(ok(rows[1].sales)).toBe(55642);
+    const sum = (f: (r: (typeof rows)[number]) => { status: string; value?: number }) => rows.reduce((t, r) => t + (f(r).value ?? 0), 0);
+    expect(sum((r) => r.sales as never)).toBe(247975);
+    expect(sum((r) => r.grossSale as never)).toBeCloseTo(274999, 1);
   });
 
   it('derives cost percentages against the matching revenue line', () => {
@@ -115,7 +139,7 @@ describe('buildFinancialReportDraft — no data reaches the report as needs-data
     // No discount/tax/charge entered at all — F7's totals are null, so the per-group
     // allocation that depends on them can't be resolved either.
     expect(draft.kpis.totalDiscounts.status).toBe('needs-data');
-    const kitchen = draft.revenueMatrix.rows.find((r) => r.key === 'kitchen')!;
+    const kitchen = draft.revenueMatrix.rows.find((r) => r.key === 'm_food')!;
     expect(kitchen.discount.status).toBe('needs-data');
     expect(kitchen.taxes.status).toBe('needs-data');
     expect(kitchen.netSales.status).toBe('needs-data');
@@ -133,7 +157,7 @@ describe('buildFinancialReportDraft — revenue groups absent from the template'
     ];
     const draft = buildFinancialReportDraft(kitchenOnly, { m_pax: '10', m_food: '5000' }, []);
     expect(draft.revenueMatrix.rows).toHaveLength(1);
-    expect(draft.revenueMatrix.rows[0].key).toBe('kitchen');
+    expect(draft.revenueMatrix.rows[0].key).toBe('m_food');
   });
 
   it('treats a template with no discount metrics at all as zero discount, not missing', () => {

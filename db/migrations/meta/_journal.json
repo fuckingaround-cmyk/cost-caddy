@@ -64,6 +64,34 @@
       "when": 1790513296180,
       "tag": "0008_evidence_table_extraction",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790516513772,
+      "tag": "0009_evidence_item_cancellation_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790519051198,
+      "tag": "0010_evidence_findings",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790581414015,
+      "tag": "0011_pos_report_section",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790585678647,
+      "tag": "0012_template_archive",
+      "breakpoints": true
     }
   ]
 }

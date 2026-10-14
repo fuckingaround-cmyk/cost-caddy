@@ -1,0 +1,25 @@
+We need to be able to upload images and send that images to AI to get the details
+POS reports we need to be able to get show the total impact of the discount
+Other observations need to be optional
+N/A issue needs to be checkedv
+MTD reports needs to be accurate as well.
+
+
+
+SECTION 1
+Remove Kitchen sale and bar sale from top, all over metrics
+Food sales
+Bar sales - split this to liqour and beverage
+Sale Before taxes | Discount | Net Sales | Taxes | Service Charge | Gross Sale | APC
+Gross Sale -  Discount = Net sales 
+Net sales + Taxes
+![Image ](image.png)
+Discount Percentage in the report per category
+Cost we need to add if we add other categories such and we need to select which sales to divide the costs from to ge the 
+
+We need to remove N/A points the report -  we don't need it
+The comments which the auditors are making in the report we don't need it 
+
+Checkpoint | Observation | Risk Severity | Operational Impact | Corrective Action | SLA | Evidence
+
+

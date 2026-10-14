@@ -1,13 +1,11 @@
 'use client';
 
-import type { Dispatch, SetStateAction } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import { NA_REASONS } from '@/lib/checklist/naReasons';
 import { isItemAnswered } from '@/lib/checklist/isItemAnswered';
 import { compressImage } from '@/lib/media/compressImage';
-import { removeItemPhoto, setEvidencePhotoType, uploadItemPhoto } from '@/lib/actions/checklist';
+import { removeItemPhoto, uploadItemPhoto } from '@/lib/actions/checklist';
 import type { AuditItemRow } from '@/lib/queries/audits';
-import { EVIDENCE_PHOTO_TYPES, EVIDENCE_PHOTO_TYPE_LABELS, type EvidencePhotoType } from '@/lib/evidence/types';
-import { suggestedEvidenceType } from '@/lib/evidence/suggest';
 
 type ItemStatus = AuditItemRow['status'];
 
@@ -24,9 +22,6 @@ export interface PhotoEntry {
   meta: string;
   uploading?: boolean;
   kind?: 'image' | 'file';
-  // B7/ADR-0012 — the recipe the auditor picked for this photo; undefined while
-  // uploading, null once uploaded with no type picked (not a register photo).
-  evidenceType?: EvidencePhotoType | null;
 }
 
 export interface ChecklistItemState extends AuditItemRow {
@@ -78,7 +73,11 @@ export function ChecklistStep({
   setActiveItemId,
   expandedCats,
   setExpandedCats,
+  title = 'Department checklist',
+  subtitle = 'Mark each checkpoint and add a remark for the report',
 }: {
+  title?: string;
+  subtitle?: string;
   items: ChecklistItemState[];
   setItems: Dispatch<SetStateAction<ChecklistItemState[]>>;
   activeItemId: string | null;
@@ -106,7 +105,7 @@ export function ChecklistStep({
     );
   };
 
-  const addPhotos = async (itemId: string, checkpointCode: string, files: FileList | null) => {
+  const addPhotos = async (itemId: string, files: FileList | null) => {
     if (!files || files.length === 0) return;
     // Sequential, not Promise.all — "photos upload one at a time on capture" (B4).
     for (const rawFile of Array.from(files)) {
@@ -121,35 +120,22 @@ export function ChecklistStep({
         const formData = new FormData();
         formData.set('file', prepared);
         const uploaded = await uploadItemPhoto(itemId, formData);
-        // B7/ADR-0012 — a checkpoint can only suggest a default evidence type, never
-        // decide it; applying the suggestion here also fires the extraction.
-        const evidenceType = uploaded.kind === 'image' ? suggestedEvidenceType(checkpointCode) : null;
         setItems((prev) =>
           prev.map((it) =>
             it.id === itemId
               ? {
                   ...it,
                   photos: it.photos.map((p) =>
-                    p.id === tempId ? { id: uploaded.id, name: uploaded.name, meta: uploaded.meta, kind: uploaded.kind, evidenceType } : p,
+                    p.id === tempId ? { id: uploaded.id, name: uploaded.name, meta: uploaded.meta, kind: uploaded.kind } : p,
                   ),
                 }
               : it,
           ),
         );
-        if (evidenceType) void setEvidencePhotoType(uploaded.id, evidenceType);
       } catch {
         setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, photos: it.photos.filter((p) => p.id !== tempId) } : it)));
       }
     }
-  };
-
-  const changeEvidenceType = (itemId: string, photoId: string, evidenceType: EvidencePhotoType | null) => {
-    setItems((prev) =>
-      prev.map((it) =>
-        it.id === itemId ? { ...it, photos: it.photos.map((p) => (p.id === photoId ? { ...p, evidenceType } : p)) } : it,
-      ),
-    );
-    void setEvidencePhotoType(photoId, evidenceType);
   };
 
   const removePhoto = async (itemId: string, photoId: string) => {
@@ -175,10 +161,8 @@ export function ChecklistStep({
 
   return (
     <div style={{ padding: '16px 24px 32px 24px' }}>
-      <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 2 }}>Department checklist</div>
-      <div style={{ fontSize: 12, color: 'var(--hint)', marginBottom: 12 }}>
-        Mark each checkpoint and add a remark for the report
-      </div>
+      <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 2 }}>{title}</div>
+      <div style={{ fontSize: 12, color: 'var(--hint)', marginBottom: 12 }}>{subtitle}</div>
 
       {departments.map((dept, i) => {
         const answered = dept.items.filter(isItemAnswered).length;
@@ -244,9 +228,8 @@ export function ChecklistStep({
                     onStatus={(s) => setStatus(it.id, s)}
                     onRemarkChange={(remark) => updateItem(it.id, { remark })}
                     onNaReasonChange={(naReason) => updateItem(it.id, { naReason })}
-                    onAddPhotos={(files) => void addPhotos(it.id, it.code, files)}
+                    onAddPhotos={(files) => void addPhotos(it.id, files)}
                     onRemovePhoto={(photoId) => void removePhoto(it.id, photoId)}
-                    onEvidenceTypeChange={(photoId, evidenceType) => changeEvidenceType(it.id, photoId, evidenceType)}
                   />
                 ))}
               </div>
@@ -267,7 +250,6 @@ function ChecklistItemRow({
   onNaReasonChange,
   onAddPhotos,
   onRemovePhoto,
-  onEvidenceTypeChange,
 }: {
   item: ChecklistItemState;
   active: boolean;
@@ -277,7 +259,6 @@ function ChecklistItemRow({
   onNaReasonChange: (v: string) => void;
   onAddPhotos: (files: FileList | null) => void;
   onRemovePhoto: (photoId: string) => void;
-  onEvidenceTypeChange: (photoId: string, evidenceType: EvidencePhotoType | null) => void;
 }) {
   const hasRemark = item.remark.trim() !== '';
 
@@ -346,6 +327,15 @@ function ChecklistItemRow({
             <textarea
               value={item.remark}
               onChange={(e) => onRemarkChange(e.target.value)}
+              onPaste={(e) => {
+                // Pasting a copied screenshot/photo while the remark is focused attaches
+                // it as evidence instead of dropping it (there's no text to paste anyway).
+                const files = e.clipboardData?.files;
+                if (files && files.length > 0 && Array.from(files).some((f) => f.type.startsWith('image/'))) {
+                  e.preventDefault();
+                  onAddPhotos(files);
+                }
+              }}
               placeholder={item.status === 'pass' ? 'Add a remark (optional)…' : 'Add a remark…'}
               rows={2}
               style={{
@@ -360,7 +350,7 @@ function ChecklistItemRow({
             />
           )}
 
-          <PhotoAttach photos={item.photos} onAdd={onAddPhotos} onRemove={onRemovePhoto} onEvidenceTypeChange={onEvidenceTypeChange} />
+          <PhotoAttach photos={item.photos} onAdd={onAddPhotos} onRemove={onRemovePhoto} />
         </div>
       )}
     </div>
@@ -371,20 +361,59 @@ function PhotoAttach({
   photos,
   onAdd,
   onRemove,
-  onEvidenceTypeChange,
 }: {
   photos: PhotoEntry[];
   onAdd: (files: FileList | null) => void;
   onRemove: (photoId: string) => void;
-  onEvidenceTypeChange: (photoId: string, evidenceType: EvidencePhotoType | null) => void;
 }) {
+  const [pasteError, setPasteError] = useState<string | null>(null);
+
+  const handlePasteScreenshot = async () => {
+    setPasteError(null);
+    try {
+      if (!navigator.clipboard?.read) throw new Error('unsupported');
+      const clipboardItems = await navigator.clipboard.read();
+      for (const clipboardItem of clipboardItems) {
+        const imageType = clipboardItem.types.find((t) => t.startsWith('image/'));
+        if (!imageType) continue;
+        const blob = await clipboardItem.getType(imageType);
+        const file = new File([blob], `screenshot-${Date.now()}.png`, { type: imageType });
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        onAdd(dt.files);
+        return;
+      }
+      setPasteError('No image found on the clipboard — copy a screenshot first.');
+    } catch {
+      setPasteError('Could not read the clipboard. Try Ctrl/Cmd+V in the remark box instead.');
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <AttachButton label="Camera" accept="image/*" capture onAdd={onAdd} />
         <AttachButton label="Gallery" accept="image/*" onAdd={onAdd} />
         <AttachButton label="File" accept=".csv,.xlsx,.xls,.pdf,image/*" onAdd={onAdd} />
+        <button
+          type="button"
+          onClick={() => void handlePasteScreenshot()}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '8px 12px',
+            border: '1px dashed var(--border-strong)',
+            borderRadius: 'var(--radius-control)',
+            background: 'var(--surface-alt-1)',
+            fontSize: 12,
+            cursor: 'pointer',
+          }}
+        >
+          Paste screenshot
+        </button>
       </div>
+      {pasteError && <div style={{ fontSize: 11, color: 'var(--status-fail-fg-app)' }}>{pasteError}</div>}
       {photos.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {photos.map((p) => (
@@ -415,21 +444,6 @@ function PhotoAttach({
                 {p.name}
               </div>
               <div style={{ fontSize: 10, color: 'var(--muted-2)' }}>{p.meta}</div>
-              {!p.uploading && p.kind === 'image' && (
-                <select
-                  value={p.evidenceType ?? ''}
-                  onChange={(e) => onEvidenceTypeChange(p.id, e.target.value === '' ? null : (e.target.value as EvidencePhotoType))}
-                  title="Extract this photo as a table?"
-                  style={{ fontSize: 10, border: '1px solid var(--border)', borderRadius: 'var(--radius-control)', padding: '2px 4px', background: 'var(--surface)' }}
-                >
-                  <option value="">Not a register</option>
-                  {EVIDENCE_PHOTO_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {EVIDENCE_PHOTO_TYPE_LABELS[t]}
-                    </option>
-                  ))}
-                </select>
-              )}
               {!p.uploading && (
                 <button
                   type="button"

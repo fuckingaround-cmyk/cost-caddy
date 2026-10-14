@@ -43,7 +43,7 @@ Two delivery stages:
 | PDF export | **Playwright** (headless Chromium) against the print CSS | Report is already print-first (`data-avoid` / `data-break`). Version-stamped output. The only export format shipped — no XLSX for now (`EXECUTION.md` R12). |
 | Hosting | **Cloudflare or Vercel** (free tier at this scale) | Next.js app here; Supabase holds Postgres + Storage. Portable for eventual client handover. |
 | LLM layer | **DeepSeek** (`deepseek-chat`, plain `fetch`, no SDK) | Introduced in **B6** (submit-time remark polish + severity scoring, ADR-0011 — was Anthropic under ADR-0004) — earlier than originally planned. Stage B's analytics narration provider is not yet decided; it is no longer assumed to reuse this client. No job queue yet: B6 uses Next's `after()` to run the job post-response rather than Stage B's Graphile Worker/pg-boss, since Stage A has no worker host. |
-| Vision layer | **Gemini** (`gemini-2.5-flash`, plain `fetch`, no SDK) | Introduced in **B7** (evidence-photo table extraction, ADR-0012) — independent of DeepSeek's job, sees only evidence photos, never remark text or financial figures. Same `after()`-based, fire-and-forget pattern as B6; a failure never blocks upload or submit. |
+| Vision layer | **OpenAI** (`gpt-4o-mini`, plain `fetch`, no SDK) | Introduced in **B7** (evidence-photo table extraction, ADR-0012) — independent of DeepSeek's job, sees only evidence photos, never remark text or financial figures. Same `after()`-based, fire-and-forget pattern as B6; a failure never blocks upload or submit. Was Gemini until ADR-0014 (the original project had zero API quota provisioned). |
 
 **Why TypeScript end-to-end (not a Python backend):** the frontend is TS regardless; a single language
 gives shared types across the wire (no Pydantic-vs-TS drift on deep, versioned shapes), a near-mechanical
@@ -113,7 +113,7 @@ Brand          { id, org_id, name }               // brand → outlet hierarchy 
 Outlet/Restaurant { id, brand_id, name, status: 'active'|'suspended' }
 User           { id, org_id, role, name, email, phone, pwd_hash, status }   // argon2; shown-once
 Session        { id, user_id, ... }               // signed-cookie; admin can end all
-Template       { id, name, metrics: MetricDef[], items: ChecklistPoint[] }
+Template       { id, name, archivedAt?, metrics: MetricDef[], items: ChecklistPoint[] }  // archivedAt: hidden, kept for audits that used it (ADR-0016)
   MetricDef      { id, label, section: 'covers'|'sales'|'discount'|'tax'|'cost',
                    revGroup?: 'bar'|'kitchen',        // sales — which revenue bucket
                    kind?:     'tax'|'charge',         // tax — 'charge' excluded from Total Taxes
@@ -142,6 +142,11 @@ OperationalFile { id, auditId, type, period, name, format, storagePath,
                   parseStatus: 'parsed'|'unreadable', coverageSummary? }  // attached in review (C1)
 Report         { auditId, version, findings[], attachments[], token, publishedAt }
 ```
+
+**Deletes never cascade.** Every FK is `ON DELETE no action`, so removing an audit deletes its children
+explicitly, in FK order, inside one transaction and sweeps its Storage files after commit; a restaurant can
+only be deleted when it has no audits; a template is hard-deleted when unused and archived when any audit
+references it (ADR-0016, `lib/actions/{audits,restaurants,templates}.ts`).
 
 **Operational files are per-audit, not a global inbox.** The design's `sReports` screen draws a single
 firm-wide upload list keyed loosely to restaurant/period strings; C1 instead attaches each file to the
@@ -211,17 +216,27 @@ now; `EXECUTION.md` R12).
 - **Evidence-photo table extraction** (`lib/ai/extractEvidenceTable.ts`, ADR-0012, **B7**) is a second,
   independent AI job: the auditor picks a fixed recipe (`lib/ai/evidenceRecipes.ts`) per evidence photo
   at capture — checklist checkpoints can only *suggest* a default (`lib/evidence/suggest.ts`), never
-  decide it — and Gemini transcribes the photo's table verbatim under that recipe's columns. Fires from
+  decide it — and OpenAI transcribes the photo's table verbatim under that recipe's columns. Fires from
   `setEvidencePhotoType` (fire-and-forget), with a submit-time sweep (`sweepEvidenceExtraction`) as the
   safety net for whatever the capture-time trigger missed — same shape as B6/`scoreAuditRemarks`. An
   extracted table is reviewer-editable and shown immediately, the same trust model `updateFinding` gives
   AI-assigned severity — no separate confirm step.
+- **POS reports** (ADR-0015, **C6**) are a third template section (`template_pos_reports`) that snapshots
+  onto the audit as `audit_items` with `section = 'pos_report'` and a `report_type` (the recipe of every photo
+  attached, so no picker). At submit one `after()` job runs remark scoring → extraction sweep →
+  `lib/ai/generateRegisterFindings.ts`: DeepSeek writes one Findings and Observations + one Corrective Measures
+  block per report from the auditor's remark and the extracted table (text-only; every quotable figure traces
+  to a stored cell), stored in `audit_evidence_findings`. "Generate report" fills missing ones; the admin can
+  edit, Save or Regenerate. The prompt forbids computing an exact numeric delta against the plain-text policy
+  context (`lib/ai/evidenceFindingsPolicyContext.ts`), keeping D12 intact. POS items are excluded from the
+  compliance matrix, scoring, `scoreAuditRemarks` and `classifyFinding`.
 - **Report v4** (`app/admin/(protected)/review/[id]/report/`) has its own type system (Inter Tight +
   IBM Plex Mono `tabular-nums`, Material Symbols), is print-first (`[data-avoid]`/`[data-break]` in
   `globals.css`), and renders §1 (KPI strip + revenue matrix + two composition donuts), §1B (costing via
   `lib/report/costingBreakdown.ts`), §2 (per-department compliance table from C3's findings), and §3
-  (**Evidence Registers**, `EvidenceRegisterSection.tsx` — Gemini-extracted tables grouped by evidence
-  type, ADR-0012; not R9's Findings Register, which is still cut). `showCharts`/`showSummaryRibbon` are
+  (**POS Reports**, `PosReportSection.tsx` — per POS report: heading → Findings and
+  Observations → OpenAI-extracted table(s) → Corrective Measures, ADR-0012/ADR-0014/ADR-0015; not R9's Findings
+  Register, which is still cut). `showCharts`/`showSummaryRibbon` are
   real flags that both default true (no story asks to hide either yet). The Evidence column carries real photo thumbnails, clickable both on the web and in
   the PDF — the PDF thumbnail is wrapped in a real `<a href>` backed by a long-lived (10-year)
   signed URL, since a published PDF is opened long after the storage layer's normal 1-hour default
@@ -251,7 +266,8 @@ Correctness load-bearers — encode in schema, guard in review:
 - **Submit is one-way.** `assigned → in-progress → submitted`; Submit is confirmed once and makes the
   audit immutable for the auditor. No unsubmit — corrections are admin-side.
 - **Publish freezes; correction versions.** A correction is `v2` with a revision note; earlier versions
-  remain. With no audit trail (D9), versioning is the **sole** history.
+  remain. With no audit trail (D9), versioning is the **sole** history. (Freezing guards against edits — the
+  admin can still delete a whole audit, ADR-0016.)
 - **Calculated is never typed.** Any derivable figure is read-only everywhere; totals recompute live.
 - **N/A is neither fail nor blank.** Requires a reason, excluded from compliance %, listed separately.
   Compliance is `pass / (pass + fail)` — N/A is excluded from the denominator (UX-007, revised —
@@ -261,6 +277,11 @@ Correctness load-bearers — encode in schema, guard in review:
   rewrites prose only and never touches a number. Severity/impact/corrective-action are still set by the
   **reviewer**, never in the field. **ADR-0004** / UX-010 — this reverses the earlier
   "remarks are quoted, not rewritten" rule and records the trade-off.
+- **Evidence-table extraction is verbatim OCR, not narration or computation.** OpenAI transcribes
+  exactly what's visible in an evidence photo under a fixed recipe's columns — it never sums, rounds,
+  recomputes a percentage, or invents an illegible cell. D12 ("LLM never computes") is narrowed a
+  second time to state this plainly, the same way ADR-0011 narrowed it for severity. **ADR-0012** /
+  UX-026.
 
 ---
 
@@ -275,7 +296,8 @@ Carried from the Plan §9 — resolve before the dependent work: (1) connectivit
 the no-offline bet); (2) real client Excel samples before Phase 3 (drive the mapping engine + the
 TS-vs-Python ingestion call, D11); (3) which Phase 3 modules are truly in the 7 weeks; (4) **data-to-LLM
 boundary sign-off + residency (D12) — now broader than financial data, since ADR-0004/ADR-0011 send every
-non-pass auditor remark (and, for Fail items, its severity assessment) to DeepSeek at submit**; (5) whether
+non-pass auditor remark (and, for Fail items, its severity assessment) to DeepSeek at submit, and
+ADR-0012/ADR-0014 sends evidence-photo bytes to OpenAI for any photo the auditor picks a recipe for**; (5) whether
 `org_id` grows into real multi-tenancy;
 (6) data residency (India / DPDP Act); (7) outlet report-token expiry policy.
 

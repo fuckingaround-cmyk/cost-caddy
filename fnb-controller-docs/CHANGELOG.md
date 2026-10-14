@@ -5,6 +5,47 @@ and DESIGN Part B). One dated line per shipped thing.
 
 ## Foundations — 2026
 
+### 2026-10-14
+- Changed: report header now shows restaurant, city (no "Audit Report" prefix) and the audit period (start to end) instead of the template
+  name and a single audit date, and the "Generated" date is removed; the Section 1 KPI strip keeps only Gross Sale, Total Pax, Total Discount and Net
+  Sale; "Per Pax" is now "APC" (UX-030).
+- Changed: deleting a restaurant now removes it together with all its audits, reports and stored files
+  (the confirm shows the audit count) instead of being blocked until audits were deleted one by one
+  (ADR-0016).
+
+### 2026-09-28
+- Added: admin housekeeping — templates can be duplicated and deleted (archived instead when audits used
+  them); restaurants can be renamed/relocated and deleted when they have no audits; audits can be deleted
+  at any status and reassigned to another auditor until submitted; auditor outlet pickers now show each
+  restaurant's location (ADR-0016, UX-029, A6).
+- Added: templates now have a third section, "POS Report" (Discount, Item Cancellation, Bill
+  Modification, Complimentary). Auditors get a matching "POS Report" tab (same UI as the
+  checklist), the register type is implied by the report so there is no photo type picker, and
+  the report has a separate "Section 3 · POS Reports" (heading, findings, table, corrective
+  measures). Findings and corrective measures are now generated at submit from the auditor's
+  remark and the extracted table, and are editable (with Regenerate) on the review screen;
+  extracted table cells are no longer editable. POS reports are excluded from compliance
+  scoring (ADR-0015, UX-028).
+- Fixed: evidence-table extraction always failed with a Gemini quota error (the Google
+  Cloud project behind that key had zero API quota provisioned). Switched the vision
+  provider to OpenAI (`gpt-4o-mini`) — same extraction contract, no other behavior change
+  (ADR-0014).
+
+### 2026-09-27
+- Fixed: pasting a copied screenshot into a checklist remark did nothing — it now attaches
+  as evidence, and the design-specced "Paste screenshot" button next to Camera/Gallery/File
+  is now built (BUG-028).
+- Added: evidence photos attached to a checklist item can now be picked as a register type
+  (Discount Register, Voids & Cancellations, Non-Chargeable / Complimentary Report, Bill
+  Modification Log, Item Cancellation Log) and are auto-transcribed into a real table by
+  Gemini vision, reviewer-editable on the review screen and rendered as a new "Section 3 ·
+  Evidence Registers" in the report, grouped by type — the compliance matrix's Evidence
+  column still shows a plain thumbnail for every photo, unchanged (ADR-0012, UX-026).
+- Added: each evidence register in that new section now carries a Findings and
+  Observations write-up and a Corrective Measures write-up, written by the reviewer and
+  rewritten in place by a "Polish with AI" action (DeepSeek), grounded in that type's own
+  extracted rows and never computing a numeric delta against policy (ADR-0013, UX-027).
+
 ### 2026-09-26
 - Fixed: publishing an audit failed on the deployed Vercel app with a
   `playwright-core`/`browsers.json` module error — full Playwright can't run in a

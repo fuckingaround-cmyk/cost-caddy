@@ -83,6 +83,7 @@ function PendingRow({ audit }: { audit: AuditorAuditRow }) {
         title={audit.outletName}
         meta={
           <>
+            {audit.name && <div>{audit.name}</div>}
             Period {audit.periodEnd} · {audit.itemsDone} of {audit.itemsTotal} items
           </>
         }
@@ -101,6 +102,7 @@ function HistoryRow({ audit }: { audit: AuditorAuditRow }) {
         title={audit.outletName}
         meta={
           <>
+            {audit.name && <div>{audit.name}</div>}
             Period {audit.periodEnd}
             <AiStatus state={audit.aiState} />
           </>

@@ -54,13 +54,14 @@ export default async function ReportDocPage({ params }: { params: Promise<{ id: 
             {publish ? `PUBLISHED v${publish.version}` : 'REPORT DRAFT'}
           </span>
           <span style={{ color: 'var(--navy-border-soft-2)' }}>
-            {vm.audit.outletName} · {vm.audit.templateName}
+            {vm.audit.outletName}{vm.audit.outletCity ? ` · ${vm.audit.outletCity}` : ''}
           </span>
         </div>
         <PrintButton />
       </header>
 
       <main
+        data-report-main=""
         style={{
           flex: 1,
           width: '100%',

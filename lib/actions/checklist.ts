@@ -12,7 +12,7 @@ import { parseMetricValue } from '@/lib/calc';
 import { isItemAnswered } from '@/lib/checklist/isItemAnswered';
 import { scoreAuditRemarks } from '@/lib/ai/scoreAuditRemarks';
 import { extractEvidenceTable, sweepEvidenceExtraction } from '@/lib/ai/extractEvidenceTable';
-import type { EvidencePhotoType } from '@/lib/evidence/types';
+import { generateRegisterFindings } from '@/lib/ai/generateRegisterFindings';
 
 async function requireOwnedAudit(auditId: string) {
   const user = await requireRole('auditor');
@@ -83,7 +83,7 @@ export type UploadedPhoto = { id: string; name: string; meta: string; kind: 'ima
 export async function uploadItemPhoto(auditItemId: string, formData: FormData): Promise<UploadedPhoto> {
   const user = await requireRole('auditor');
   const [item] = await db
-    .select({ id: auditItems.id, auditId: auditItems.auditId, auditStatus: audits.status })
+    .select({ id: auditItems.id, auditId: auditItems.auditId, auditStatus: audits.status, reportType: auditItems.reportType })
     .from(auditItems)
     .innerJoin(audits, eq(audits.id, auditItems.auditId))
     .where(and(eq(auditItems.id, auditItemId), eq(audits.orgId, user.orgId), eq(audits.auditorId, user.id)))
@@ -103,37 +103,24 @@ export async function uploadItemPhoto(auditItemId: string, formData: FormData): 
   const meta = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
   const [row] = await db
     .insert(auditItemFiles)
-    .values({ orgId: user.orgId, auditItemId, kind, name: file.name, storagePath: path, meta })
+    .values({
+      orgId: user.orgId,
+      auditItemId,
+      kind,
+      name: file.name,
+      storagePath: path,
+      meta,
+      // ADR-0015 — a photo on a POS report item is that report type's register: the type is
+      // implied by the item, so extraction is queued right here (no client round trip).
+      evidenceType: kind === 'image' ? item.reportType : null,
+    })
     .returning({ id: auditItemFiles.id });
 
-  return { id: row.id, name: file.name, meta, kind };
-}
-
-// B7/ADR-0012 — the auditor picks (or changes) the evidence-type recipe for a photo
-// after it's attached; a checkpoint can only suggest a default (see
-// lib/ai/evidenceRecipes.ts's suggestedEvidenceType), never decide it, since the same
-// checkpoint code can imply more than one register type. Setting it queues a Gemini
-// extraction, fire-and-forget, same as B4's photo upload never blocking on anything.
-export async function setEvidencePhotoType(fileId: string, evidenceType: EvidencePhotoType | null): Promise<void> {
-  const user = await requireRole('auditor');
-  const [file] = await db
-    .select({ id: auditItemFiles.id, auditStatus: audits.status })
-    .from(auditItemFiles)
-    .innerJoin(auditItems, eq(auditItems.id, auditItemFiles.auditItemId))
-    .innerJoin(audits, eq(audits.id, auditItems.auditId))
-    .where(and(eq(auditItemFiles.id, fileId), eq(audits.orgId, user.orgId), eq(audits.auditorId, user.id)))
-    .limit(1);
-  if (!file) throw new Error('Not found');
-  assertEditable(file.auditStatus);
-
-  await db
-    .update(auditItemFiles)
-    .set({ evidenceType, extractionStatus: null, extractedTable: null, extractionModel: null, extractedAt: null })
-    .where(eq(auditItemFiles.id, fileId));
-
-  if (evidenceType) {
-    after(() => extractEvidenceTable(fileId));
+  if (kind === 'image' && item.reportType) {
+    after(() => extractEvidenceTable(row.id));
   }
+
+  return { id: row.id, name: file.name, meta, kind };
 }
 
 // B5 — the submit gate. Recomputes completeness from the DB rather than trusting the
@@ -176,10 +163,13 @@ export async function submitAudit(auditId: string): Promise<void> {
   // redirect() below — `after()` runs even when redirect/notFound is called), never
   // awaited here. A failure inside it can never block or reverse this submit — see
   // scoreAuditRemarks.
-  after(() => scoreAuditRemarks(auditId));
-  // Safety net for any evidence photo whose capture-time extraction never fired
-  // (ADR-0012) — see sweepEvidenceExtraction.
-  after(() => sweepEvidenceExtraction(auditId));
+  // Sequential on purpose: the register findings (ADR-0015) need every photo's table
+  // extracted (sweep is the safety net for any capture-time trigger that never fired).
+  after(async () => {
+    await scoreAuditRemarks(auditId);
+    await sweepEvidenceExtraction(auditId);
+    await generateRegisterFindings(auditId);
+  });
 
   redirect(`/auditor/report/${auditId}`);
 }

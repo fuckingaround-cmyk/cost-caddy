@@ -1,13 +1,16 @@
 import { and, asc, eq } from 'drizzle-orm';
 import { db } from '@/db';
-import { auditOperationalFiles, audits, outlets, templates, users } from '@/db/schema';
+import { auditEvidenceFindings, auditOperationalFiles, audits, outlets, templates, users } from '@/db/schema';
+import type { EvidencePhotoType } from '@/lib/evidence/types';
 
 export type ReviewAuditDetail = {
   id: string;
   status: (typeof audits.status.enumValues)[number];
+  periodStart: string | null;
   periodEnd: string;
   outletId: string;
   outletName: string;
+  outletCity: string | null;
   auditorName: string;
   templateName: string;
   reportGeneratedAt: Date | null;
@@ -24,9 +27,11 @@ export async function getAuditForReview(orgId: string, auditId: string): Promise
     .select({
       id: audits.id,
       status: audits.status,
+      periodStart: audits.periodStart,
       periodEnd: audits.periodEnd,
       outletId: audits.outletId,
       outletName: outlets.name,
+      outletCity: outlets.city,
       auditorName: users.name,
       templateName: templates.name,
       reportGeneratedAt: audits.reportGeneratedAt,
@@ -72,5 +77,25 @@ export async function listOperationalFiles(auditId: string): Promise<Operational
     .from(auditOperationalFiles)
     .where(eq(auditOperationalFiles.auditId, auditId))
     .orderBy(asc(auditOperationalFiles.uploadedAt));
+}
+
+export type EvidenceFindingsRow = {
+  evidenceType: EvidencePhotoType;
+  findings: string;
+  correctiveMeasures: string;
+  aiPolishedAt: Date | null;
+};
+
+// ADR-0013 — one row per evidence type per audit; empty until the reviewer saves a draft.
+export async function getEvidenceFindings(auditId: string): Promise<EvidenceFindingsRow[]> {
+  return db
+    .select({
+      evidenceType: auditEvidenceFindings.evidenceType,
+      findings: auditEvidenceFindings.findings,
+      correctiveMeasures: auditEvidenceFindings.correctiveMeasures,
+      aiPolishedAt: auditEvidenceFindings.aiPolishedAt,
+    })
+    .from(auditEvidenceFindings)
+    .where(eq(auditEvidenceFindings.auditId, auditId));
 }
 

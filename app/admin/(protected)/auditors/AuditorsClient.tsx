@@ -18,6 +18,10 @@ const initialCreateState: CreateAuditorState = {};
 // Ported from Super Admin Flow.dc.html's genPwd — an easy-to-read temporary password the
 // admin can hand off verbally, editable/regeneratable before the account is even created.
 const PASSWORD_WORDS = ['Chiller', 'Pantry', 'Griddle', 'Cellar', 'Larder', 'Skillet'];
+function outletLabel(o: { name: string; city: string | null }): string {
+  return o.city ? `${o.name} — ${o.city}` : o.name;
+}
+
 function generateTempPassword(): string {
   const word = PASSWORD_WORDS[Math.floor(Math.random() * PASSWORD_WORDS.length)];
   return `${word}-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -28,7 +32,7 @@ export function AuditorsClient({
   outlets,
 }: {
   auditors: AuditorRow[];
-  outlets: { id: string; name: string }[];
+  outlets: { id: string; name: string; city: string | null }[];
 }) {
   const [newOpen, setNewOpen] = useState(false);
   const [createFormKey, setCreateFormKey] = useState(0);
@@ -214,7 +218,7 @@ export function AuditorsClient({
                               cursor: 'pointer',
                             }}
                           >
-                            {o.name}
+                            {outletLabel(o)}
                           </button>
                         );
                       })}
@@ -350,7 +354,7 @@ function NewAuditorForm({
   onCancel,
   onDone,
 }: {
-  outlets: { id: string; name: string }[];
+  outlets: { id: string; name: string; city: string | null }[];
   onCancel: () => void;
   onDone: (name: string) => void;
 }) {
@@ -441,7 +445,7 @@ function NewAuditorForm({
               cursor: 'pointer',
             }}
           >
-            <input type="checkbox" name="outletIds" value={o.id} /> {o.name}
+            <input type="checkbox" name="outletIds" value={o.id} /> {outletLabel(o)}
           </label>
         ))}
       </div>

@@ -13,7 +13,7 @@ type JumpTarget = { kind: 'metric' | 'item'; id: string };
 
 // Auditor tab is local component state (auditorTab in the design's logic class), never
 // a URL param — matches the tabs/stacked-steps split between mobile and laptop (UX-001).
-type Step = 'metrics' | 'checklist';
+type Step = 'metrics' | 'checklist' | 'pos';
 
 function sanitizeNumeric(raw: string): string {
   // Letters are refused without a dialog (B2 done-when): strip anything but digits and
@@ -39,7 +39,6 @@ export function ChecklistScreen({
   initialItems: AuditItemRow[];
   initialFiles: AuditItemFileRow[];
 }) {
-  const [step, setStep] = useState<Step>('metrics');
   const [values, setValues] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
     for (const d of defs) {
@@ -54,14 +53,26 @@ export function ChecklistScreen({
       ...it,
       photos: initialFiles
         .filter((f) => f.auditItemId === it.id)
-        .map((f) => ({ id: f.id, name: f.name, meta: f.meta ?? '', kind: f.kind, evidenceType: f.evidenceType })),
+        .map((f) => ({ id: f.id, name: f.name, meta: f.meta ?? '', kind: f.kind })),
     })),
   );
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [expandedCats, setExpandedCats] = useState<Set<string>>(() => {
-    const first = initialItems[0]?.cat;
-    return new Set(first ? [first] : []);
+    // First department of each section starts open (the POS section's card is always open).
+    const firstChecklist = initialItems.find((it) => it.section === 'checklist')?.cat;
+    const firstPos = initialItems.find((it) => it.section === 'pos_report')?.cat;
+    return new Set([firstChecklist, firstPos].filter((c): c is string => !!c));
   });
+
+  // ADR-0015 — a tab shows only if the template has that section.
+  const checklistItems = items.filter((it) => it.section === 'checklist');
+  const posItems = items.filter((it) => it.section === 'pos_report');
+  const tabs: { step: Step; label: string }[] = [
+    ...(defs.length > 0 ? [{ step: 'metrics' as const, label: 'MTD Metrics' }] : []),
+    ...(checklistItems.length > 0 ? [{ step: 'checklist' as const, label: 'Departmental Checklist' }] : []),
+    ...(posItems.length > 0 ? [{ step: 'pos' as const, label: 'POS Report' }] : []),
+  ];
+  const [step, setStep] = useState<Step>(tabs[0]?.step ?? 'metrics');
 
   const sections = useMemo(() => metricSections(defs, values), [defs, values]);
   const enteredCount = defs.filter((d) => (values[d.id] ?? '').trim() !== '').length;
@@ -120,7 +131,7 @@ export function ChecklistScreen({
       if (firstPendingItem) {
         setExpandedCats((prev) => new Set(prev).add(firstPendingItem.cat));
         setActiveItemId(firstPendingItem.id);
-        setStep('checklist');
+        setStep(firstPendingItem.section === 'pos_report' ? 'pos' : 'checklist');
         jumpToTarget({ kind: 'item', id: firstPendingItem.id });
         return;
       }
@@ -151,12 +162,11 @@ export function ChecklistScreen({
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, padding: '14px 24px 0 24px' }}>
-        <TabButton active={step === 'metrics'} onClick={() => setStep('metrics')}>
-          1 · MTD Metrics
-        </TabButton>
-        <TabButton active={step === 'checklist'} onClick={() => setStep('checklist')}>
-          2 · Departmental Checklist
-        </TabButton>
+        {tabs.map((t, i) => (
+          <TabButton key={t.step} active={step === t.step} onClick={() => setStep(t.step)}>
+            {i + 1} · {t.label}
+          </TabButton>
+        ))}
       </div>
 
       <div hidden={step !== 'metrics'}>
@@ -253,16 +263,33 @@ export function ChecklistScreen({
         </div>
       </div>
 
-      <div hidden={step !== 'checklist'}>
-        <ChecklistStep
-          items={items}
-          setItems={setItems}
-          activeItemId={activeItemId}
-          setActiveItemId={setActiveItemId}
-          expandedCats={expandedCats}
-          setExpandedCats={setExpandedCats}
-        />
-      </div>
+      {checklistItems.length > 0 && (
+        <div hidden={step !== 'checklist'}>
+          <ChecklistStep
+            items={checklistItems}
+            setItems={setItems}
+            activeItemId={activeItemId}
+            setActiveItemId={setActiveItemId}
+            expandedCats={expandedCats}
+            setExpandedCats={setExpandedCats}
+          />
+        </div>
+      )}
+
+      {posItems.length > 0 && (
+        <div hidden={step !== 'pos'}>
+          <ChecklistStep
+            title="POS reports"
+            subtitle="Mark each report, add a remark and attach the report photo"
+            items={posItems}
+            setItems={setItems}
+            activeItemId={activeItemId}
+            setActiveItemId={setActiveItemId}
+            expandedCats={expandedCats}
+            setExpandedCats={setExpandedCats}
+          />
+        </div>
+      )}
 
       <div
         style={{

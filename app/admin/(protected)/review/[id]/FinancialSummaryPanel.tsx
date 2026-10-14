@@ -19,7 +19,7 @@ export function FinancialSummaryPanel({ draft }: { draft: FinancialReportDraft }
     { label: 'APC (Gross)', value: money(draft.kpis.apcGross) },
   ];
 
-  const matrixRows = [...draft.revenueMatrix.rows, draft.revenueMatrix.total];
+  const matrixRows = [...draft.revenueMatrix.rows, draft.revenueMatrix.total].map((row, i, all) => ({ row, depth: 0, isTotal: i === all.length - 1 }));
 
   const costRows: { label: string; value: string }[] = [
     { label: 'Bar Cost', value: `${money(draft.costing.barCost)} (${pct(draft.costing.barCostPct)})` },
@@ -60,9 +60,9 @@ export function FinancialSummaryPanel({ draft }: { draft: FinancialReportDraft }
             </tr>
           </thead>
           <tbody>
-            {matrixRows.map((r, i) => (
-              <tr key={r.label} style={{ borderTop: '1px solid var(--divider)', fontWeight: i === matrixRows.length - 1 ? 700 : 400 }}>
-                <td style={{ padding: '8px 13px' }}>{r.label}</td>
+            {matrixRows.map(({ row: r, depth, isTotal }) => (
+              <tr key={`${depth}-${r.label}`} style={{ borderTop: '1px solid var(--divider)', fontWeight: isTotal ? 700 : 400, color: depth ? 'var(--muted)' : undefined }}>
+                <td style={{ padding: depth ? '8px 13px 8px 26px' : '8px 13px' }}>{r.label}</td>
                 <td style={{ textAlign: 'right', padding: '8px 13px' }}>{money(r.sales)}</td>
                 <td style={{ textAlign: 'right', padding: '8px 13px' }}>{money(r.discount)}</td>
                 <td style={{ textAlign: 'right', padding: '8px 13px' }}>{money(r.netSales)}</td>

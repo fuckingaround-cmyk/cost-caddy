@@ -22,6 +22,9 @@ Legend: ☐ todo · ◐ in progress · ☑ done (clear on next rollup)
 - ☑ Auditors CRUD — password shown once, access, suspend, remove-keeps-audits · A3
 - ☑ Templates library + Template Builder, auto-renumbering reference codes · A4
 - ☑ Audit create/assign, share token, template snapshot on assign · A5
+- ◐ Admin housekeeping — duplicate/delete templates, edit/delete restaurants, delete/reassign audits,
+  outlet name + location in auditor pickers · A6, ADR-0016 — code written; needs migration `0012`
+  (`db:migrate`) and a manual walkthrough (see plan) before marking done
 
 ## Auditor
 - ☑ Responsive shell + login + pending list · B1

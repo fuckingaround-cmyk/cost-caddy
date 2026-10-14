@@ -8,6 +8,8 @@ import { listTemplates } from '@/lib/queries/templates';
 import { listActiveAuditors } from '@/lib/queries/auditors';
 import { listOutletReports, periodMonthKey } from '@/lib/queries/reports';
 import { AuditsHeader } from './AuditsHeader';
+import { AuditActions } from './AuditActions';
+import { RestaurantHeader } from './RestaurantHeader';
 
 export default async function RestaurantDetailPage({
   params,
@@ -46,25 +48,7 @@ export default async function RestaurantDetailPage({
       >
         &lsaquo; All restaurants
       </Link>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          borderBottom: '1px solid var(--divider)',
-          paddingBottom: 'var(--space-9)',
-          marginBottom: 'var(--space-10)',
-          gap: 12,
-          flexWrap: 'wrap',
-        }}
-      >
-        <div>
-          <div style={{ fontFamily: 'var(--font-ui-title)', fontSize: 'var(--text-screen-title)', fontWeight: 600 }}>
-            {restaurant.name}
-          </div>
-          <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 3 }}>{restaurant.city}</div>
-        </div>
-      </div>
+      <RestaurantHeader outletId={id} name={restaurant.name} city={restaurant.city} auditCount={audits.length} />
 
       <AuditsHeader
         outletId={id}
@@ -87,7 +71,10 @@ export default async function RestaurantDetailPage({
                       Auditor {a.auditorName} · Period {a.periodEnd}
                     </div>
                   </div>
-                  <StatusChip status={a.status} />
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
+                    <StatusChip status={a.status} />
+                    <AuditActions auditId={a.id} status={a.status} auditorId={a.auditorId} auditors={auditors} />
+                  </div>
                 </div>
               </div>
             ))}
@@ -114,6 +101,8 @@ export default async function RestaurantDetailPage({
                     Auditor {a.auditorName} · Period {a.periodEnd}
                   </div>
                 </div>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
+                <AuditActions auditId={a.id} status={a.status} auditorId={a.auditorId} auditors={auditors} />
                 <Link
                   href={`/admin/review/${a.id}`}
                   style={{
@@ -129,6 +118,7 @@ export default async function RestaurantDetailPage({
                 >
                   Review
                 </Link>
+                </div>
               </div>
             ))}
           </AuditGroup>
@@ -162,6 +152,7 @@ export default async function RestaurantDetailPage({
                   >
                     View report
                   </Link>
+                  <AuditActions auditId={a.id} status={a.status} auditorId={a.auditorId} auditors={auditors} />
                 </div>
               </div>
             ))}

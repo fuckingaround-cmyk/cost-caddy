@@ -32,7 +32,55 @@ a {
 }
 
 /* Print — report + spec are print-first (letter, 0.6in margin) */
+@page {
+  size: letter landscape;
+  margin: 0.4in;
+}
 @media print {
+  /* Report fills the printable width — its screen layout (max 1420px + padding) would
+     otherwise overflow the page and clip the right-hand columns. */
+  [data-report-main] {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  [data-scroll-x] {
+    overflow: visible !important;
+  }
+  /* Compact print: the screen layout is designed for ~1420px but a landscape Letter page is
+     ~980px wide, so px sizes read ~45% too big. Zoom the report down and tighten page 1. */
+  [data-report-main] {
+    zoom: 0.78;
+  }
+  [data-report-title] {
+    font-size: 30px !important;
+  }
+  [data-kpi-card] {
+    padding: 10px 12px !important;
+  }
+  [data-kpi-value] {
+    font-size: 17px !important;
+  }
+  [data-matrix] th,
+  [data-matrix] td {
+    padding-top: 7px !important;
+    padding-bottom: 7px !important;
+  }
+  [data-gap] {
+    margin-bottom: 16px !important;
+  }
+  [data-pos-table] th,
+  [data-pos-table] td {
+    padding: 5px 8px !important;
+    font-size: 10.5px !important;
+  }
+  tr {
+    page-break-inside: avoid;
+  }
   body {
     background: #fff !important;
     -webkit-print-color-adjust: exact;

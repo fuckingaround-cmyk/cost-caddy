@@ -6,6 +6,7 @@ import { saveTemplate } from '@/lib/actions/templates';
 import { builderCatCode, checklistPointCode } from '@/lib/templates/builderCode';
 import { METRIC_CATS, UNIT_OPTIONS, toMetricInput, type MetricCatKey } from '@/lib/templates/metricCats';
 import type { TemplateDetail } from '@/lib/queries/templates';
+import { POS_REPORT_LABELS, POS_REPORT_TYPES, type PosReportType } from '@/lib/evidence/types';
 import { Button } from '@/components/ui/Button';
 import { CategoryIcon, CheckIcon, CirclePlusIcon, DepartmentIcon, PlusIcon, TrashIcon } from './icons';
 
@@ -59,6 +60,8 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
         }))
       : [{ cid: newId('c'), cat: 'New Category 1', code: 'NC', points: [] }],
   );
+  const [posReports, setPosReports] = useState<PosReportType[]>(initial.posReports);
+  const [posPick, setPosPick] = useState<PosReportType | ''>('');
   const [openCids, setOpenCids] = useState<string[] | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -100,6 +103,14 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
 
   const totalPoints = departments.reduce((n, d) => n + d.points.length, 0);
 
+  const availablePosTypes = POS_REPORT_TYPES.filter((t) => !posReports.includes(t));
+  const addPosReport = () => {
+    if (!posPick) return;
+    setPosReports((rs) => [...rs, posPick]);
+    setPosPick('');
+  };
+  const removePosReport = (t: PosReportType) => setPosReports((rs) => rs.filter((r) => r !== t));
+
   const onSave = () => {
     setSaveError(null);
     startTransition(async () => {
@@ -128,6 +139,7 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
               .filter((p) => p.label.trim())
               .map((p) => ({ label: p.label, guidance: p.guidance, freeform: p.freeform, code: '' })),
           })),
+        posReports,
     });
   };
 
@@ -137,7 +149,7 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
         Template Builder
       </div>
       <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 'var(--space-10)' }}>
-        Metrics the auditor enters, then department-wise checklist points
+        Metrics the auditor enters, department-wise checklist points, then POS reports
       </div>
 
       <div style={{ maxWidth: 720 }}>
@@ -376,6 +388,50 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
           <CirclePlusIcon />
           Add Department
         </button>
+
+        <div style={{ padding: '30px 0 10px 0' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--navy-700)' }}>
+            Part 3 · POS Report
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--hint)', marginTop: 4 }}>
+            {posReports.length} report{posReports.length === 1 ? '' : 's'} · the auditor attaches each report and its remark
+          </div>
+        </div>
+
+        <div style={{ marginTop: 14, border: '1px solid var(--border-dashed)', borderRadius: 'var(--radius-large)', overflow: 'hidden', background: 'var(--surface)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', background: 'var(--surface-alt-1)', borderBottom: posReports.length > 0 ? '1px solid var(--border-dashed)' : 'none' }}>
+            <select
+              value={posPick}
+              onChange={(e) => setPosPick(e.target.value as PosReportType | '')}
+              disabled={availablePosTypes.length === 0}
+              style={{ flex: 1, minWidth: 0, padding: '9px 10px', border: '1px solid var(--border-dashed)', borderRadius: 'var(--radius-card)', fontSize: 12.5, background: 'var(--surface)' }}
+            >
+              <option value="">{availablePosTypes.length === 0 ? 'All report types added' : 'Select a report type…'}</option>
+              {availablePosTypes.map((t) => (
+                <option key={t} value={t}>
+                  {POS_REPORT_LABELS[t]}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={addPosReport}
+              disabled={!posPick}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: 'var(--navy-700)', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap', cursor: posPick ? 'pointer' : 'default', opacity: posPick ? 1 : 0.5 }}
+            >
+              <PlusIcon />
+              Add Report
+            </button>
+          </div>
+          {posReports.map((t) => (
+            <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 18px', borderBottom: '1px solid var(--surface-alt-1)' }}>
+              <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--navy-900)' }}>{POS_REPORT_LABELS[t]}</div>
+              <button type="button" onClick={() => removePosReport(t)} title="Remove report" style={{ border: 'none', background: 'transparent', padding: 5, display: 'flex', cursor: 'pointer' }}>
+                <TrashIcon />
+              </button>
+            </div>
+          ))}
+        </div>
 
         {saveError && (
           <div style={{ marginTop: 16, fontSize: 12, color: 'var(--status-fail-fg-app)', fontWeight: 600, textAlign: 'right' }}>

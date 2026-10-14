@@ -38,10 +38,35 @@ body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: 
 [data-noprint] { display: none !important; }
 [data-avoid] { page-break-inside: avoid; }
 [data-break] { page-break-before: always; }
+[data-scroll-x] { overflow: visible !important; }
+[data-pos-table] th, [data-pos-table] td { padding: 5px 8px !important; font-size: 10.5px !important; }
+tr { page-break-inside: avoid; }
+/* Compact print: the screen layout is designed for ~1420px but a landscape Letter page is
+   ~980px wide, so px sizes read ~45% too big. Zoom the report down and tighten page 1. */
+[data-report-main] {
+  zoom: 0.78;
+}
+[data-report-title] {
+  font-size: 30px !important;
+}
+[data-kpi-card] {
+  padding: 10px 12px !important;
+}
+[data-kpi-value] {
+  font-size: 17px !important;
+}
+[data-matrix] th,
+[data-matrix] td {
+  padding-top: 7px !important;
+  padding-bottom: 7px !important;
+}
+[data-gap] {
+  margin-bottom: 16px !important;
+}
 </style>
 </head>
 <body>
-<main style="max-width:1420px;margin:0 auto;padding:36px 28px;background:#fff;box-sizing:border-box;">
+<main data-report-main="" style="width:100%;margin:0;padding:0;background:#fff;box-sizing:border-box;">
 ${bodyMarkup}
 </main>
 </body>
@@ -68,8 +93,8 @@ async function launchChromium() {
 
 // Renders the SAME ReportBody component tree the review screen shows (lib/report/
 // reportViewModel.ts assembles identical data for both), to a static HTML string, then
-// prints it to a PDF buffer via headless Chromium. Letter size, 0.6in margin — DESIGN.md
-// Part A's print spec.
+// prints it to a PDF buffer via headless Chromium. Letter landscape, 0.4in margin, so the wide
+// register tables fit the page width instead of clipping.
 export async function renderReportPdf(vm: ReportViewModel, publish: PublishBadge): Promise<Buffer> {
   // Dynamic, not a static top-level import — Next's bundler refuses to let any
   // Server Component/Server Action module statically import react-dom/server (it owns
@@ -86,7 +111,8 @@ export async function renderReportPdf(vm: ReportViewModel, publish: PublishBadge
     await page.setContent(html, { waitUntil: 'networkidle' });
     const pdf = await page.pdf({
       format: 'Letter',
-      margin: { top: '0.6in', bottom: '0.6in', left: '0.6in', right: '0.6in' },
+      landscape: true,
+      margin: { top: '0.4in', bottom: '0.4in', left: '0.4in', right: '0.4in' },
       printBackground: true,
     });
     return pdf;

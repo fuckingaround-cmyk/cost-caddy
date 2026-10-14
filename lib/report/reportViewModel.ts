@@ -1,4 +1,4 @@
-import { getAuditForReview, listOperationalFiles, type ReviewAuditDetail } from '@/lib/queries/review';
+import { getAuditForReview, getEvidenceFindings, listOperationalFiles, type ReviewAuditDetail } from '@/lib/queries/review';
 import { getAuditItemFiles, getAuditItems, getAuditMetricDefs, getAuditMetricValues } from '@/lib/queries/audits';
 import { createSignedUrl, REPORT_EVIDENCE_URL_TTL_SECONDS } from '@/lib/storage';
 import { buildFinancialReportDraft, type FinancialReportDraft } from './financialDraft';
@@ -6,22 +6,25 @@ import { buildCostingBreakdown, type CostingBreakdown } from './costingBreakdown
 import { figureValue } from './figure';
 import type { DonutSlice } from '@/app/admin/(protected)/review/[id]/report/CompositionDonut';
 import type { ComplianceItem, Department } from '@/app/admin/(protected)/review/[id]/report/ComplianceSection';
-import { EVIDENCE_PHOTO_TYPE_LABELS, type EvidencePhotoType } from '@/lib/evidence/types';
 
-export interface EvidenceRegisterTable {
+export interface PosReportTable {
   id: string;
-  checkpointLabel: string;
-  department: string;
   photoName: string;
   photoUrl: string;
   columns: string[];
   rows: string[][];
 }
 
-export interface EvidenceRegisterGroup {
-  evidenceType: EvidencePhotoType;
+// ADR-0015 — one POS report item (Discount / Item Cancellation / Bill Modification /
+// Complimentary), rendered in its own report section, separate from the compliance matrix.
+export interface PosReport {
+  id: string;
   label: string;
-  tables: EvidenceRegisterTable[];
+  status: 'pending' | 'pass' | 'fail' | 'na';
+  naReason: string | null;
+  findings: string;
+  correctiveMeasures: string;
+  tables: PosReportTable[];
 }
 
 export interface ReportViewModel {
@@ -29,7 +32,7 @@ export interface ReportViewModel {
   draft: FinancialReportDraft;
   costing: CostingBreakdown;
   departments: Department[];
-  evidenceRegisters: EvidenceRegisterGroup[];
+  posReports: PosReport[];
   salesSlices: DonutSlice[];
   costSlices: DonutSlice[];
 }
@@ -41,13 +44,15 @@ export async function loadReportViewModel(orgId: string, auditId: string): Promi
   const audit = await getAuditForReview(orgId, auditId);
   if (!audit) return null;
 
-  const [defs, values, items, itemFiles, opFiles] = await Promise.all([
+  const [defs, values, items, itemFiles, opFiles, evidenceFindings] = await Promise.all([
     getAuditMetricDefs(auditId),
     getAuditMetricValues(auditId),
     getAuditItems(auditId),
     getAuditItemFiles(auditId),
     listOperationalFiles(auditId),
+    getEvidenceFindings(auditId),
   ]);
+  const findingsByType = new Map(evidenceFindings.map((f) => [f.evidenceType, f]));
 
   const draft = buildFinancialReportDraft(
     defs,
@@ -73,7 +78,7 @@ export async function loadReportViewModel(orgId: string, auditId: string): Promi
   const photosByItemId = new Map(itemPhotos);
 
   const departments: Department[] = [];
-  for (const it of items) {
+  for (const it of items.filter((i) => i.section === 'checklist')) {
     let dept = departments.find((d) => d.cat === it.cat);
     if (!dept) {
       dept = { cat: it.cat, catCode: it.catCode, items: [] };
@@ -95,38 +100,36 @@ export async function loadReportViewModel(orgId: string, auditId: string): Promi
     dept.items.push(complianceItem);
   }
 
-  // B7/ADR-0012 — grouped by evidence type across the whole audit (not per checklist
-  // row) into its own report section (EvidenceRegisterSection), separate from the
-  // compliance matrix's Evidence column, which keeps showing plain thumbnails unchanged.
-  const evidenceRegisters: EvidenceRegisterGroup[] = [];
-  for (const it of items) {
-    const files = itemFiles.filter((f) => f.auditItemId === it.id && f.extractionStatus === 'extracted' && f.extractedTable);
-    for (const f of files) {
-      const evidenceType = f.evidenceType as EvidencePhotoType;
-      let group = evidenceRegisters.find((g) => g.evidenceType === evidenceType);
-      if (!group) {
-        group = { evidenceType, label: EVIDENCE_PHOTO_TYPE_LABELS[evidenceType], tables: [] };
-        evidenceRegisters.push(group);
-      }
-      group.tables.push({
+  // ADR-0015 — POS report items become their own section (not compliance-matrix rows).
+  const posReports: PosReport[] = [];
+  for (const it of items.filter((i) => i.section === 'pos_report')) {
+    const written = it.reportType ? findingsByType.get(it.reportType) : undefined;
+    const tables: PosReportTable[] = [];
+    for (const f of itemFiles.filter((x) => x.auditItemId === it.id && x.extractionStatus === 'extracted' && x.extractedTable)) {
+      tables.push({
         id: f.id,
-        checkpointLabel: it.label,
-        department: it.cat,
         photoName: f.name,
         photoUrl: await createSignedUrl(f.storagePath, REPORT_EVIDENCE_URL_TTL_SECONDS).catch(() => ''),
         columns: f.extractedTable!.columns,
         rows: f.extractedTable!.rows,
       });
     }
+    posReports.push({
+      id: it.id,
+      label: it.label,
+      status: it.status,
+      naReason: it.naReason,
+      findings: written?.findings ?? '',
+      correctiveMeasures: written?.correctiveMeasures ?? '',
+      tables,
+    });
   }
 
-  const kitchenNet = figureValue(draft.revenueMatrix.rows.find((r) => r.key === 'kitchen')?.netSales ?? { status: 'needs-data' });
-  const barNet = figureValue(draft.revenueMatrix.rows.find((r) => r.key === 'bar')?.netSales ?? { status: 'needs-data' });
+  const SALES_COLORS = ['var(--status-pass-bg-deep)', 'var(--status-pass-fg)', 'var(--report-chart-teal-1)', 'var(--report-chart-teal-2)', 'var(--report-chart-teal-3)'];
   const taxes = figureValue(draft.kpis.totalTaxes);
   const charges = figureValue(draft.kpis.totalCharges);
   const salesSlices: DonutSlice[] = [
-    { label: 'Kitchen', value: kitchenNet ?? 0, color: 'var(--status-pass-bg-deep)' },
-    { label: 'Bar', value: barNet ?? 0, color: 'var(--status-pass-fg)' },
+    ...draft.revenueMatrix.rows.map((r, i) => ({ label: r.label, value: figureValue(r.netSales) ?? 0, color: SALES_COLORS[i % SALES_COLORS.length] })),
     { label: 'Service charge', value: charges ?? 0, color: 'var(--report-chart-teal-4)' },
     { label: 'Statutory taxes', value: taxes ?? 0, color: 'var(--report-chart-teal-5)' },
   ];
@@ -140,5 +143,5 @@ export async function loadReportViewModel(orgId: string, auditId: string): Promi
     { label: 'Non-commercial cost', value: ncCost ?? 0, color: 'var(--report-chart-rust-4)' },
   ];
 
-  return { audit, draft, costing, departments, evidenceRegisters, salesSlices, costSlices };
+  return { audit, draft, costing, departments, posReports, salesSlices, costSlices };
 }

@@ -1,11 +1,11 @@
 import type { ReportViewModel } from '@/lib/report/reportViewModel';
-import { count, moneyShort } from '@/lib/report/reportFormat';
+import { moneyShort } from '@/lib/report/reportFormat';
 import { KpiStrip } from './KpiStrip';
 import { RevenueMatrix } from './RevenueMatrix';
 import { CompositionDonut } from './CompositionDonut';
 import { CostingTable, SectionHeading } from './CostingTable';
 import { ComplianceSection } from './ComplianceSection';
-import { EvidenceRegisterSection } from './EvidenceRegisterSection';
+import { PosReportSection } from './PosReportSection';
 
 export interface PublishBadge {
   version: number;
@@ -26,7 +26,7 @@ export function ReportBody({
   // ComplianceSection's 'use client' EvidenceThumb outside Next's own RSC pipeline.
   interactive?: boolean;
 }) {
-  const { audit, draft, costing, departments, evidenceRegisters, salesSlices, costSlices } = vm;
+  const { audit, draft, costing, departments, posReports, salesSlices, costSlices } = vm;
 
   // Ported from the design as real flags, not omitted — no story yet asks an admin to
   // hide either, so both default on (DESIGN.md UX-016).
@@ -37,10 +37,12 @@ export function ReportBody({
     <>
       <div data-avoid="" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20, paddingBottom: 16 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 44, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.02, color: 'var(--navy-700)' }}>{audit.outletName}</h1>
-          <div style={{ fontSize: 13, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--r-muted)', fontWeight: 600, marginTop: 8 }}>
-            Audit Report · {audit.templateName}
-          </div>
+          <h1 data-report-title="" style={{ margin: 0, fontSize: 44, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.02, color: 'var(--navy-700)' }}>{audit.outletName}</h1>
+          {audit.outletCity && (
+            <div style={{ fontSize: 13, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--r-muted)', fontWeight: 600, marginTop: 8 }}>
+              {audit.outletCity}
+            </div>
+          )}
         </div>
         <div style={{ textAlign: 'right' }}>
           {publish ? (
@@ -65,22 +67,19 @@ export function ReportBody({
           ) : (
             <div style={{ fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--r-muted)', fontWeight: 600 }}>Draft — not yet published</div>
           )}
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--r-ink)', marginTop: 2 }}>Audit Date: {audit.periodEnd}</div>
-          <div style={{ fontSize: 11.5, fontFamily: 'var(--font-report-mono)', color: 'var(--r-muted)', marginTop: 4 }}>
-            Generated {audit.reportGeneratedAt?.toISOString().slice(0, 10)}
-          </div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--r-ink)', marginTop: 2 }}>Audit Period: {audit.periodStart && audit.periodStart !== audit.periodEnd ? `${audit.periodStart} to ${audit.periodEnd}` : audit.periodEnd}</div>
         </div>
       </div>
-      <div style={{ height: 1, background: 'var(--r-border-2)', margin: '8px 0 24px' }} />
+      <div data-gap="" style={{ height: 1, background: 'var(--r-border-2)', margin: '8px 0 24px' }} />
 
-      <section style={{ marginBottom: 40 }}>
-        <SectionHeading label="Section 1 · Key Financial & Unit Economic Metrics" right={`Audited ${count(draft.kpis.covers)} covers`} />
+      <section data-gap="" style={{ marginBottom: 40 }}>
+        <SectionHeading label="Section 1 · Key Financial & Unit Economic Metrics" />
         <div data-avoid="">
           <KpiStrip kpis={draft.kpis} />
         </div>
         <RevenueMatrix draft={draft} />
         {showCharts && (
-          <div data-avoid="" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 24 }}>
+          <div data-avoid="" data-gap="" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 24 }}>
             <CompositionDonut title="Sales Composition" totalLabel={moneyShort(draft.kpis.grossSale)} slices={salesSlices} />
             <CompositionDonut
               title="Cost Composition"
@@ -93,7 +92,7 @@ export function ReportBody({
 
       <CostingTable breakdown={costing} />
       <ComplianceSection departments={departments} showSummaryRibbon={showSummaryRibbon} interactive={interactive} />
-      <EvidenceRegisterSection groups={evidenceRegisters} />
+      <PosReportSection reports={posReports} />
     </>
   );
 }

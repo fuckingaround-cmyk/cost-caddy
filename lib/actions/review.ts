@@ -4,13 +4,15 @@ import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/db';
-import { auditItemFiles, auditItems, auditOperationalFiles, audits } from '@/db/schema';
+import { auditEvidenceFindings, auditItemFiles, auditItems, auditOperationalFiles, audits } from '@/db/schema';
 import { requireRole } from '@/lib/auth';
 import { deleteFile, operationalFilePath, uploadFile } from '@/lib/storage';
 import { parseOperationalFile } from '@/lib/operational/parseFile';
 import { NA_REASONS } from '@/lib/checklist/naReasons';
 import { classifyFinding, type Severity } from '@/lib/report/classify';
 import { extractEvidenceTable } from '@/lib/ai/extractEvidenceTable';
+import { generateRegisterFindings, generateRegisterFindingsForItem } from '@/lib/ai/generateRegisterFindings';
+import type { EvidencePhotoType } from '@/lib/evidence/types';
 
 async function requireReviewableAudit(auditId: string) {
   const admin = await requireRole('super_admin');
@@ -167,7 +169,8 @@ export async function generateReport(auditId: string): Promise<void> {
   const items = await db
     .select({ id: auditItems.id, code: auditItems.code, label: auditItems.label, remark: auditItems.remark, status: auditItems.status, severity: auditItems.severity })
     .from(auditItems)
-    .where(eq(auditItems.auditId, auditId));
+    // POS report items are excluded from per-item findings (ADR-0015).
+    .where(and(eq(auditItems.auditId, auditId), eq(auditItems.section, 'checklist')));
 
   await db.transaction(async (tx) => {
     for (const item of items) {
@@ -192,6 +195,10 @@ export async function generateReport(auditId: string): Promise<void> {
 
     await tx.update(audits).set({ reportGeneratedAt: new Date() }).where(eq(audits.id, auditId));
   });
+
+  // Fallback for any POS register whose submit-time findings never landed (ADR-0015) —
+  // only fills what's missing, so it never overwrites an AI-written or admin-edited block.
+  await generateRegisterFindings(auditId, { onlyMissing: true });
 
   revalidatePath(`/admin/review/${auditId}`);
 }
@@ -229,25 +236,6 @@ async function requireOwnedEvidenceFile(fileId: string, auditId: string) {
   return { admin };
 }
 
-// B7/ADR-0012 — every extracted cell is reviewer-editable, exactly as updateFinding
-// already allows for severity: no separate confirm step, since the table is already
-// live in the report the moment extraction succeeds. Also covers an admin manually
-// filling in a table after a failed extraction.
-export async function updateEvidenceTable(
-  fileId: string,
-  auditId: string,
-  table: { columns: string[]; rows: string[][] },
-): Promise<void> {
-  await requireOwnedEvidenceFile(fileId, auditId);
-
-  await db
-    .update(auditItemFiles)
-    .set({ extractedTable: table, extractionStatus: 'extracted' })
-    .where(eq(auditItemFiles.id, fileId));
-
-  revalidatePath(`/admin/review/${auditId}`);
-}
-
 // Synchronous, unlike the fire-and-forget capture-time/submit-time triggers — the admin
 // is waiting on this one.
 export async function retryEvidenceExtraction(fileId: string, auditId: string): Promise<void> {
@@ -256,4 +244,46 @@ export async function retryEvidenceExtraction(fileId: string, auditId: string): 
   await extractEvidenceTable(fileId);
 
   revalidatePath(`/admin/review/${auditId}`);
+}
+
+// ADR-0013 — the reviewer's own raw draft for one evidence type's Findings and
+// Observations / Corrective Measures (one pair per type per audit, not per photo). Save
+// is separate from "Polish with AI" below so a manual edit is never silently clobbered.
+export async function updateEvidenceFindings(
+  auditId: string,
+  evidenceType: EvidencePhotoType,
+  fields: { findings: string; correctiveMeasures: string },
+): Promise<void> {
+  const { admin } = await requireReviewableAudit(auditId);
+
+  await db
+    .insert(auditEvidenceFindings)
+    .values({ orgId: admin.orgId, auditId, evidenceType, ...fields })
+    .onConflictDoUpdate({
+      target: [auditEvidenceFindings.auditId, auditEvidenceFindings.evidenceType],
+      set: { ...fields, updatedAt: new Date() },
+    });
+
+  revalidatePath(`/admin/review/${auditId}`);
+}
+
+// ADR-0015 — re-runs the submit-time DeepSeek job for one POS report (remark + extracted
+// table), overwriting its Findings/Corrective Measures. Synchronous: the admin is waiting.
+export async function regenerateRegisterFindings(
+  auditId: string,
+  itemId: string,
+): Promise<{ findings: string; correctiveMeasures: string }> {
+  await requireReviewableAudit(auditId);
+
+  const [item] = await db
+    .select({ id: auditItems.id })
+    .from(auditItems)
+    .where(and(eq(auditItems.id, itemId), eq(auditItems.auditId, auditId), eq(auditItems.section, 'pos_report')))
+    .limit(1);
+  if (!item) throw new Error('Not found');
+
+  const generated = await generateRegisterFindingsForItem(itemId);
+
+  revalidatePath(`/admin/review/${auditId}`);
+  return generated;
 }

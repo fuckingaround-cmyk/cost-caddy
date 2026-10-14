@@ -16,8 +16,10 @@ Next.js (App Router) + **TypeScript end-to-end** · PostgreSQL on **Supabase** �
 hosting on **Cloudflare/Vercel**. PWA is an installable shell only (Serwist/`next-pwa`), **no offline
 data layer**. **DeepSeek** (`deepseek-chat`, plain `fetch` — no SDK), lands early with **B6** (submit-time
 remark polish + severity scoring, ADR-0011, superseding ADR-0004's Anthropic-only prose polish) rather
-than waiting for Stage B. Stage B's LLM provider for analytics narration is not yet decided (ADR-0011).
-Stage B adds SheetJS, Arquero, Graphile Worker/pg-boss, Recharts.
+than waiting for Stage B. **OpenAI** (`gpt-4o-mini`, plain `fetch` — no SDK) lands alongside it with
+**B7** (evidence-photo table extraction — discount registers, void logs — ADR-0012/ADR-0014); an
+independent job, never sees remark text or financial figures. Stage B's LLM provider for analytics
+narration is not yet decided (ADR-0011). Stage B adds SheetJS, Arquero, Graphile Worker/pg-boss, Recharts.
 Rationale in `docs/ARCHITECTURE.md` §2 and `docs/decisions/0001-typescript-end-to-end.md`.
 
 ## Directory map
@@ -95,7 +97,7 @@ No `test`, Drizzle `migrate`, or Playwright e2e script yet — those land with F
   token. Two separate surfaces (App UI vs Report); don't merge their type systems. Report numbers use
   IBM Plex Mono + `tabular-nums`.
 - Sentence case except eyebrows/pills; plain-noun labels; currency Indian short-scale (`₹4.80L`) via one formatter.
-- **LLM never computes** — it narrates numbers computed deterministically; every AI-stated figure must trace to a computed value.
+- **LLM never computes** — it narrates numbers computed deterministically; every AI-stated figure must trace to a computed value. Verbatim OCR transcription of an evidence photo (OpenAI, ADR-0012/ADR-0014) is a separate, narrower carve-out: it never sums, rounds, or invents an illegible cell, but it isn't narrating a pre-computed figure either — it's the auditor's own photographed evidence, reviewer-editable before it's treated as fact.
 
 ## Project Docs
 - **`docs/PRODUCT.md`** — before questioning *what*/*for whom*. Intent; rarely changes.

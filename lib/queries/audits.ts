@@ -10,6 +10,7 @@ export type AuditRow = {
   status: (typeof audits.status.enumValues)[number];
   periodEnd: string;
   templateName: string;
+  auditorId: string;
   auditorName: string;
 };
 
@@ -22,6 +23,7 @@ export async function listOutletAudits(orgId: string, outletId: string): Promise
       status: audits.status,
       periodEnd: audits.periodEnd,
       templateName: templates.name,
+      auditorId: audits.auditorId,
       auditorName: users.name,
     })
     .from(audits)
@@ -175,6 +177,9 @@ export type AuditItemRow = {
   label: string;
   guidance: string | null;
   freeform: boolean;
+  // ADR-0015 — 'pos_report' items come from the template's POS Report section.
+  section: (typeof auditItems.section.enumValues)[number];
+  reportType: (typeof auditItems.reportType.enumValues)[number] | null;
   status: (typeof auditItems.status.enumValues)[number];
   remark: string;
   naReason: string | null;
@@ -200,6 +205,8 @@ export async function getAuditItems(auditId: string): Promise<AuditItemRow[]> {
       label: auditItems.label,
       guidance: auditItems.guidance,
       freeform: auditItems.freeform,
+      section: auditItems.section,
+      reportType: auditItems.reportType,
       status: auditItems.status,
       remark: auditItems.remark,
       naReason: auditItems.naReason,

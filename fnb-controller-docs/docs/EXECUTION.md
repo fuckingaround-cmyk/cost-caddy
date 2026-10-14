@@ -191,7 +191,10 @@ Story:     S-5, S-6, S-8
 Done when: a category can be added, metrics added to it, each metric's type set, a row
            marked calculated, rows reordered and deleted — all in place; departments can
            be added, renamed and deleted with points carrying question + guidance; and
-           reference codes renumber themselves on every change (builderCatCode → 'KIT-03')
+           reference codes renumber themselves on every change (builderCatCode → 'KIT-03');
+           and a third "Part 3 · POS Report" section lets the admin add/remove report
+           types from a dropdown (Discount, Item Cancellation, Bill Modification,
+           Complimentary — one of each at most; ADR-0015)
 ```
 
 Metric types in the builder: Currency (₹/$), Number, Count/Pax, Percentage (%), Calculated/Auto-sum.
@@ -317,6 +320,29 @@ Done when: submitting queues a single DeepSeek job that (a) rewrites every non-p
 > distorts meaning, and with no audit trail the original wording is unrecoverable. Accepted deliberately;
 > the reasoning and consequences are in **ADR-0004** and **ADR-0011**.
 
+### B7 — Evidence-photo table extraction (OpenAI vision, was Gemini — ADR-0014)
+```
+Screens:   — (an evidence-type picker on checklist, a status/edit panel on review)
+Design:    NONE — new AI scope, no .dc.html anticipates parsing structured data out of an
+           evidence photo; built from DESIGN.md Part A's existing "Report table / KPI
+           strip" token (DESIGN Part B UX-026)
+Depends:   B4, F5
+Traces to: ADR-0012
+Done when: the auditor can pick a fixed evidence-type recipe (Discount Register, Voids &
+           Cancellations, Non-Chargeable / Complimentary Report, Bill Modification Log, Item
+           Cancellation Log, Other) for any
+           image evidence photo, defaulted from the checkpoint but always changeable;
+           picking one queues an OpenAI extraction that transcribes the photo's table
+           verbatim under that recipe's columns; a failure or timeout NEVER blocks upload
+           or submit — the file simply stays without a table, with a submit-time sweep as
+           the safety net and a manual retry on the admin review screen; every extracted
+           cell is reviewer-editable and shown immediately, the same trust model
+           updateFinding already gives AI-assigned severity; and a new "Section 3 ·
+           Evidence Registers" appears in the report, grouped by evidence type, whenever
+           the audit has at least one extracted table — the compliance matrix's own
+           Evidence column is unchanged, still a plain thumbnail for every photo
+```
+
 ---
 
 ## Review and report export — C1…C5
@@ -330,8 +356,9 @@ Story:     S-9, S-10
 Done when: statuses, remarks and photos appear exactly as submitted and photos open full
            size; a status or remark can be corrected admin-side; an operational file can
            be attached and replaced, each showing what it covers and whether it read
-           successfully; and a section with no data is marked "needs data" rather than
-           left blank or zero
+           successfully; a section with no data is marked "needs data" rather than left
+           blank or zero; and any OpenAI-extracted evidence table (B7/ADR-0012) appears
+           immediately, editable by the reviewer exactly like an AI-assigned finding
 ```
 
 Operational report types seen in seed: Bill Edit & Modification · Non-chargeable · Item Purchase Statement
@@ -380,17 +407,21 @@ rewrite them again.
 Screens:   reports, reportDoc
 Design:    Audit report v4.dc.html — its own type system; build last
 Depends:   C3, F2
-Done when: §1 Key Financial & Unit Economic Metrics (KPI strip with per-pax sub-figures,
+Done when: §1 Key Financial & Unit Economic Metrics (KPI strip — Gross Sale, Total Pax, Total Discount, Net Sale — with APC sub-figures (UX-030),
            the sales & per-customer revenue matrix, and the two composition charts behind
            showCharts), §1B Costing & Cost as % of Sales (Bar & Cellar → Kitchen &
            Production → F&B → Net F&B), and §2 Department Checklists & Compliance Matrix
            (severity ribbon behind showSummaryRibbon, one numbered card per department,
            columns Ref ID / Checkpoint & Observation / Operational Impact / Risk Severity /
            Immediate Corrective Action / SLA / Evidence) all render from real data and
-           print correctly with data-avoid and data-break honoured
+           print correctly with data-avoid and data-break honoured; and §3 Evidence
+           POS Reports (C6/ADR-0015) renders, per POS report: a heading, Findings and
+           Observations, the extracted table(s) and Corrective Measures — each falling
+           back to "Not yet recorded" until written
 ```
 
-- **No §3 Findings Register** (R9) — §2's table already carries those columns.
+- **No §3 Findings Register** (R9) — §2's table already carries those columns. §3 is instead
+  **Evidence Registers** (B7/ADR-0012) — an unrelated, later addition, not the register R9 cut.
 - Evidence photos render as real clickable/embedded thumbnails, on the Report screen and in the PDF (UX-017).
 - All numbers in IBM Plex Mono with `tabular-nums`; currency Indian short-scale via the F7 formatter.
 - **Do not port the mock's edit model.** It is DOM-level `contenteditable` persisted to
@@ -414,6 +445,45 @@ history.
 to Print/PDF, and Super Admin draws a restaurant/outlet reader tree for token-based access — neither is
 in scope. The admin downloads/shares the PDF directly; there is no outlet-facing portal, no report token,
 and no per-client branding surface. See "Not yet designed" for the deferred outlet portal.
+
+### A6 — Admin housekeeping: duplicate, delete, edit, reassign
+```
+Screens:   templates, restaurantDetail, restaurants/auditors (outlet pickers)
+Design:    NONE — new scope; DESIGN Part B UX-029, Part A "Confirm-delete button"
+Depends:   A2, A3, A4, A5
+Traces to: ADR-0016
+Done when: a template can be duplicated (independent copy "<name> (copy)": metrics, departments, points,
+           POS reports, codes) and deleted (hard-deleted if no audit used it, archived — hidden from lists
+           and pickers, audits unaffected — if any did); a restaurant's name and location can be edited, and
+           it can be deleted only when it has no audits (refused server-side otherwise; its auditor access
+           rows go with it); an audit can be deleted at any status (children and stored files removed;
+           consequence named in the confirm) and reassigned to another active auditor while assigned or
+           in-progress (draft moves with it; never once submitted); and every outlet picker on the
+           Auditors screen shows the restaurant's name and location
+```
+
+### C6 — POS Report: generated Findings / Corrective Measures, separate report section
+```
+Screens:   — (a "POS Report" tab on the auditor checklist screen; a POS Reports group with
+           an editable Findings/Corrective-Measures panel on review)
+Design:    NONE — new scope; DESIGN Part B UX-028
+Depends:   A4, A5, B7, C4
+Traces to: ADR-0015 (supersedes ADR-0013's reviewer-drafted flow)
+Done when: a template's POS Report section snapshots onto the audit as pos_report items;
+           the auditor sees a POS Report tab (only if the template has one) with the
+           checklist item UI and no photo type picker, and a photo on a POS item is
+           extracted under that report's recipe automatically; submitting queues, in
+           order, remark scoring, the extraction sweep, and a DeepSeek job that writes
+           one Findings and Observations + one Corrective Measures block per report from
+           the auditor's remark and the extracted table (never computing a numeric delta
+           against the plain-text policy context); a failure never blocks submit and
+           "Generate report" fills anything missing without overwriting; the admin sees
+           the text pre-filled, can edit and Save or Regenerate, and cannot edit table
+           cells (status, original photo and Retry only); POS items are excluded from the
+           compliance matrix, ribbon counts, compliance % and per-item findings; and the
+           report renders each as heading → Findings and Observations → table(s) →
+           Corrective Measures in a separate "Section 3 · POS Reports"
+```
 
 ---
 

@@ -36,8 +36,8 @@ export async function listRestaurants(orgId: string): Promise<RestaurantRow[]> {
   }));
 }
 
-export async function listOutletOptions(orgId: string): Promise<{ id: string; name: string }[]> {
-  return db.select({ id: outlets.id, name: outlets.name }).from(outlets).where(eq(outlets.orgId, orgId)).orderBy(outlets.name);
+export async function listOutletOptions(orgId: string): Promise<{ id: string; name: string; city: string | null }[]> {
+  return db.select({ id: outlets.id, name: outlets.name, city: outlets.city }).from(outlets).where(eq(outlets.orgId, orgId)).orderBy(outlets.name);
 }
 
 export async function getRestaurant(orgId: string, outletId: string) {
@@ -59,4 +59,9 @@ export async function getOrCreateDefaultBrand(orgId: string): Promise<string> {
 
   const [created] = await db.insert(brands).values({ orgId, name: 'Default' }).returning({ id: brands.id });
   return created.id;
+}
+
+export async function countOutletAudits(outletId: string): Promise<number> {
+  const [row] = await db.select({ n: sql<number>`count(*)` }).from(audits).where(eq(audits.outletId, outletId));
+  return Number(row.n);
 }

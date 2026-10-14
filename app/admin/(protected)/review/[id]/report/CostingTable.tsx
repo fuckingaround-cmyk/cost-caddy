@@ -6,7 +6,7 @@ import { money, pct } from '@/lib/report/reportFormat';
 // non-commercial adjustment, and Total Net F&B Cost.
 export function CostingTable({ breakdown }: { breakdown: CostingBreakdown }) {
   return (
-    <section data-avoid="" style={{ marginBottom: 40 }}>
+    <section data-gap="" style={{ marginBottom: 40 }}>
       <SectionHeading label="Section 1B · Costing & Cost as % of Sales" />
       <div style={{ border: '1px solid var(--r-border)', borderRadius: 10, overflow: 'hidden', background: '#fff', boxShadow: 'var(--shadow-card)' }}>
         <div style={{ background: 'var(--navy-050)', borderBottom: '1px solid var(--r-border)', padding: '12px 16px' }}>
@@ -19,7 +19,7 @@ export function CostingTable({ breakdown }: { breakdown: CostingBreakdown }) {
             <thead>
               <tr style={{ borderBottom: '1px solid var(--r-border-2)', fontSize: 11, color: 'var(--r-ink)', background: '#fff' }}>
                 <th style={{ width: '55%', padding: '10px 12px 10px 16px', fontWeight: 600 }}>Cost Category / Line Item</th>
-                <th style={{ width: '25%', padding: '10px 16px', textAlign: 'right', fontWeight: 600 }}>Direct Cost (₹)</th>
+                <th style={{ width: '25%', padding: '10px 16px', textAlign: 'right', fontWeight: 600 }}>Direct Cost</th>
                 <th style={{ width: '20%', padding: '10px 16px 10px 12px', textAlign: 'right', fontWeight: 600 }}>%age (Sales Share)</th>
               </tr>
             </thead>

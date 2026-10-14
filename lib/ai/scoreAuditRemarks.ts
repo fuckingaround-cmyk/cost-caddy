@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { auditItems, audits } from '@/db/schema';
 import { SEVERITY_RUBRIC } from './severityRubric';
@@ -80,7 +80,7 @@ export async function scoreAuditRemarks(auditId: string): Promise<void> {
     const items = await db
       .select({ id: auditItems.id, code: auditItems.code, cat: auditItems.cat, label: auditItems.label, remark: auditItems.remark, status: auditItems.status })
       .from(auditItems)
-      .where(eq(auditItems.auditId, auditId));
+      .where(and(eq(auditItems.auditId, auditId), eq(auditItems.section, 'checklist')));
 
     const toScore = items.filter((it) => it.status !== 'pass' && it.status !== 'pending' && it.remark.trim() !== '');
     if (toScore.length === 0) {

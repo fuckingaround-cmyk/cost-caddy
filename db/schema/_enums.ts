@@ -53,6 +53,9 @@ export const opFileParseStatusEnum = pgEnum('op_file_parse_status', ['parsed', '
 // Postgres driver — same pattern as operationalFileTypeEnum above) and the state of its
 // Gemini vision extraction attempt.
 export const evidencePhotoTypeEnum = pgEnum('evidence_photo_type', EVIDENCE_PHOTO_TYPES);
+// Which template section an audit item came from (ADR-0015): ordinary department
+// checklist points vs. POS report items (typed by evidencePhotoTypeEnum).
+export const auditItemSectionEnum = pgEnum('item_section', ['checklist', 'pos_report']);
 export const evidenceExtractionStatusEnum = pgEnum('evidence_extraction_status', [
   'pending',
   'extracted',

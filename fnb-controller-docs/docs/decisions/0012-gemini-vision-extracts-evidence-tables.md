@@ -44,8 +44,11 @@ A new AI role is defined — **vision OCR/data-entry** — bound by:
    (`lib/ai/evidenceRecipes.ts`), so the same register type reads with consistent headers across
    audits and outlets. The auditor picks the type per photo (`lib/actions/checklist.ts`'s
    `setEvidencePhotoType`); a checklist checkpoint can only *suggest* a default
-   (`lib/evidence/suggest.ts`) since one checkpoint can imply more than one register type (e.g.
-   `POS-01 "Voids & Discounts"` implies both a void log and a discount register).
+   (`lib/evidence/suggest.ts`, matched on the checkpoint's **label** text, not its code — a live
+   template used `PR-01/02/03` where the original seed data assumed `POS-*`, so a code-keyed map
+   silently suggested nothing on that template) since one checkpoint can imply more than one
+   register type (e.g. a "Voids & Discounts" checkpoint implies both a void log and a discount
+   register).
 3. **Provider: Gemini (`gemini-2.5-flash`), added alongside DeepSeek, not replacing it.** Stage A now
    has two independent AI jobs doing unrelated things — DeepSeek still owns remark polish/severity at
    submit (ADR-0011); Gemini only ever sees evidence photos, never remark text or financial totals.

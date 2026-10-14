@@ -1,5 +1,6 @@
 import { boolean, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import {
+  evidencePhotoTypeEnum,
   metricCostGroupEnum,
   metricKindEnum,
   metricRevGroupEnum,
@@ -14,6 +15,9 @@ export const templates = pgTable('templates', {
     .notNull()
     .references(() => orgs.id),
   name: text('name').notNull(),
+  // Set instead of deleting when audits still reference the template (ADR-0016) — hidden
+  // from lists and pickers, but existing audits keep resolving their template name.
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -59,6 +63,24 @@ export const templateDepartments = pgTable(
     sortOrder: integer('sort_order').notNull().default(0),
   },
   (table) => [uniqueIndex('template_departments_template_code_unique').on(table.templateId, table.code)],
+);
+
+// POS Report section of a template (ADR-0015) — one row per report type the admin added
+// (Discount, Item Cancellation, Bill Modification, Complimentary), at most one of each.
+export const templatePosReports = pgTable(
+  'template_pos_reports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => orgs.id),
+    templateId: uuid('template_id')
+      .notNull()
+      .references(() => templates.id),
+    reportType: evidencePhotoTypeEnum('report_type').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+  },
+  (table) => [uniqueIndex('template_pos_reports_template_type_unique').on(table.templateId, table.reportType)],
 );
 
 // ChecklistPoint (ARCHITECTURE §5). `code` is the full reference code ('KIT-03').

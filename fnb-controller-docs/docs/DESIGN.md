@@ -124,6 +124,10 @@ flat rows on `#fafafa`, separated by `1px solid #eee` — no card-per-row.
   Flow.dc.html`'s MTD Metrics tab (originally a 134px value + a separate 94px sub column — that fixed
   three-column shape overflowed the auditor shell's ~340px mobile card width; BUG-016) — same section
   layout still drives both the auditor's capture (B2) and the reviewer's as-captured view (C1).
+- **Confirm-delete button** — two-step, inline. Idle: secondary-button box (`1px solid var(--border)`, radius
+  `--radius-control`, 12/600) with `--status-fail-fg-app` text. Armed: right-aligned 12/600 consequence text in
+  `--status-fail-fg-app`, then "Confirm delete" (filled `--status-fail-fg-app`, white text) and "Cancel"
+  (secondary). A refused action shows its error in the same colour beneath. No new tokens.
 - **Grouped panel** — `1px solid #e4e7ea`, radius 10; header band `#f7f9fb` with 13/700 title, 12px hint, right-aligned progress string (`"4 of 12"`).
 - **Department chip** — 24×24, radius 6, `#eef2f9` bg / `#dbe4f0` border, `#1e3a5f` 11/700, centred.
 - **List row** — `padding 16px 4px`, `border-bottom 1px solid #eee`, pointer; 15/600 title + 15px stroked SVG icon (`#1e3a5f`, `stroke-width 1.8`); 13px `#888` meta; right-aligned status pill.
@@ -448,7 +452,8 @@ this) and a public bucket (reverses the "never public" storage invariant for no 
 new publishes only — already-published PDFs keep their original, now-expired links. See ADR-0009.
 
 ### UX-026 — Extracted evidence tables get their own report section, not a row nested under the compliance matrix (ADR-0012)
-**Decision:** a Gemini-extracted evidence table (a discount register, voids log, etc.) renders in a new,
+**Decision:** an OpenAI-extracted evidence table (a discount register, voids log, etc. — was Gemini,
+ADR-0014) renders in a new,
 full-width **"Section 3 · Evidence Registers"** (`EvidenceRegisterSection.tsx`), appended after the
 compliance matrix and grouped by evidence type across the whole audit — one card per type, one sub-table
 per extracted photo inside it. It reuses the existing **"Report table / KPI strip"** token verbatim (12px
@@ -464,3 +469,63 @@ data now effectively appears twice in different forms — the photo itself (thum
 transcribed table (new section) — rather than one replacing the other in place; accepted since the two
 serve different purposes (visual evidence vs. readable figures) and a reviewer may want to spot-check the
 table against the original photo, which the table's caption links to directly.
+
+### UX-027 — Evidence Registers section gains Findings/Observations + Corrective Measures per type (ADR-0013)
+**Decision:** each register-type card in "Section 3 · Evidence Registers" (UX-026) is restructured to:
+heading → **Findings and Observations** (prose) → the extracted table(s) → **Corrective Measures**
+(prose), one Findings/Corrective-Measures pair per evidence type per audit — not per photo or per row.
+The reviewer writes the raw draft on the review screen (`EvidenceFindingsPanel.tsx`); a "Polish with AI"
+button rewrites it via DeepSeek, grounded in that type's own extracted rows (ADR-0013). Un-recorded text
+renders as an italic "Not yet recorded." placeholder rather than hiding the block, so every register type
+always shows the full heading→findings→table→corrective-measures shape even before a reviewer has
+written anything. **Why:** the product owner wants this section to read like an actual finding (matching
+a reference report format), not just a raw data dump; per-type (not per-row) keeps the authoring surface
+small — one register can hold many rows across many photos, and a per-row assessment would multiply the
+reviewer's workload without a clear benefit over one summary judgement. **Trade-off:** the reference
+format shown compared figures against a numeric policy limit (e.g. "exceeds 10% limit by 20%") — a
+computed delta, which D12 forbids. This is deliberately not built: the polish prompt only allows
+qualitative comparisons ("above the normal range") against a plain-text policy blurb
+(`lib/ai/evidenceFindingsPolicyContext.ts`, edited directly in code, not a settings screen — the product
+owner explicitly chose this over building one now) and never computes an exact percentage-point
+difference. A real deterministic threshold-and-narrate pipeline (matching D12's letter more closely) is a
+documented follow-up, not built now.
+
+### UX-028 — POS Report is its own template section, auditor tab and report section (ADR-0015)
+**Decision:** the Template Builder gains "Part 3 · POS Report" — a dropdown of the four report types
+(Discount, Item Cancellation, Bill Modification, Complimentary) with an add/remove list, styled like Part 2's
+cards. The auditor screen shows up to three tabs (MTD Metrics / Departmental Checklist / POS Report), numbered
+dynamically and each shown only if the template has it; the POS tab reuses the checklist item UI
+(Pass/Fail/N-A, remark, photo attach) with no evidence-type picker. On the admin review screen POS reports are
+their own "POS Reports" group; the pre-filled Findings and Observations / Corrective Measures panel stays
+editable (Save, Regenerate) and the extracted table is read-only. In the report, POS Reports are
+"Section 3": per report a card with heading → Findings and Observations → table(s) → Corrective Measures
+(N/A shows its reason; empty text shows an italic "Not yet recorded"), reusing the "Report table / KPI strip"
+token; Findings and Observations is a light-red callout and Corrective Measures a light-green one
+(`--report-pos-findings-*` / `--report-pos-corrective-*` in `styles/tokens.css`), and the card header carries
+only the report name (no subtitle); supersedes UX-026/UX-027's evidence-type grouping and admin-authored text. **Why:** registers are a
+distinct kind of evidence with their own narrative, and the product owner wants them separate from the
+compliance matrix end to end. **Trade-off:** POS reports no longer count toward compliance % or the severity
+ribbon and get no per-item severity/SLA row — deliberate, per the requested layout.
+
+### UX-029 — Admin housekeeping: duplicate, delete, edit and reassign (A6, ADR-0016)
+**Decision:** Templates cards get **Duplicate** (creates "<name> (copy)" immediately, no dialog) and **Delete**;
+the delete confirm states the outcome up front — "Used by N audits — it will be archived" vs "Delete permanently".
+The restaurant detail header gets **Edit** (inline name + location form, same fields as create) and **Delete**;
+when the restaurant has audits the button is replaced by "Delete this restaurant's N audits to remove it" rather
+than a confirm that can only fail. Every audit card (active, submitted, history) gets **Delete** with a
+status-specific consequence; active cards also get **Change auditor** (inline select + Save, active auditors
+only) — not offered once submitted. Outlet pickers on the Auditors screen show "Name — Location" (and
+"Name (Location)" in the summary line) so same-named restaurants are distinguishable. **Why:** mistakes in
+setup were permanent; a confirm that names its consequence avoids accidental loss of published reports without
+a heavyweight typed-name dialog. **Trade-off:** deletes are permanent (no trash/undo); renaming a restaurant
+updates live report screens and the MTD view but not already-published PDFs.
+
+### UX-030 — Report header and KPI strip simplified (client feedback, 2026-10-14)
+**Decision:** the report header shows the restaurant name, a subtitle of just the city (omitted
+when the outlet has no city) and "Audit Period: <start> to <end>" (a single date when the audit has no start date or
+start = end). The "Audited N covers" caption on the Section 1 heading, the template name and the "Generated <date>" line no longer appear on the report (the template name also leaves its draft bar). The Section 1 KPI strip shows only
+Total Pax (Covers) first, then Gross Sale, Total Discount and Net Sale (Ex-Tax); Kitchen Sale and Bar Sale cards are removed
+(the revenue matrix still splits kitchen/bar). The per-cover sub-figure is labelled "APC" instead of "Per Pax". The revenue matrix's first value column is headed "Sales Before Taxes" with plain numbers (no ₹ symbol).
+**Why:** the template is an internal setup detail clients don't recognise; a period is what was audited, not one day;
+APC is the term the clients use. **Trade-off:** supersedes the v4 design's six-card strip and "Per Pax" label.
+

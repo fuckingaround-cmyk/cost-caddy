@@ -3,21 +3,20 @@ import { divideFigures, type ReportFigure } from '@/lib/report/figure';
 import { count, moneyShort } from '@/lib/report/reportFormat';
 
 // Report v4 §1's KPI strip (Audit report v4.dc.html ~line 78-150): a card per figure,
-// big mono number over an uppercase label, with a per-pax sub-figure on sales cards.
+// big mono number over an uppercase label, with a APC sub-figure on sales cards.
 export function KpiStrip({ kpis }: { kpis: FinancialDraftKpis }) {
   const apc = (f: ReportFigure) => moneyShort(divideFigures(f, kpis.covers));
 
   const cards = [
-    { label: 'Gross Sale', value: moneyShort(kpis.grossSale), sub: apc(kpis.grossSale), highlight: true },
     { label: 'Total Pax (Covers)', value: count(kpis.covers), sub: null },
-    { label: 'Kitchen Sale', value: moneyShort(kpis.kitchenSale), sub: apc(kpis.kitchenSale) },
-    { label: 'Bar Sale', value: moneyShort(kpis.barSale), sub: apc(kpis.barSale) },
+    { label: 'Gross Sale', value: moneyShort(kpis.grossSale), sub: apc(kpis.grossSale), highlight: true },
     { label: 'Total Discount', value: moneyShort(kpis.totalDiscounts), sub: apc(kpis.totalDiscounts), financial: true },
     { label: 'Net Sale (Ex-Tax)', value: moneyShort(kpis.netSale), sub: apc(kpis.netSale), highlight: true, last: true },
   ];
 
   return (
     <div
+      data-gap=""
       style={{
         display: 'flex',
         flexWrap: 'wrap',
@@ -32,6 +31,7 @@ export function KpiStrip({ kpis }: { kpis: FinancialDraftKpis }) {
       {cards.map((c) => (
         <div
           key={c.label}
+          data-kpi-card=""
           style={{
             flex: '1 1 160px',
             minWidth: 160,
@@ -42,7 +42,7 @@ export function KpiStrip({ kpis }: { kpis: FinancialDraftKpis }) {
             background: c.last ? 'var(--r-surface-alt-1)' : 'transparent',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-start',
             gap: 6,
           }}
         >
@@ -50,6 +50,7 @@ export function KpiStrip({ kpis }: { kpis: FinancialDraftKpis }) {
             {c.label}
           </div>
           <div
+            data-kpi-value=""
             style={{
               fontSize: 21,
               fontWeight: 700,
@@ -61,8 +62,8 @@ export function KpiStrip({ kpis }: { kpis: FinancialDraftKpis }) {
             {c.value}
           </div>
           {c.sub && (
-            <div style={{ paddingTop: 6, borderTop: '1px solid var(--r-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 10, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--r-muted)' }}>Per Pax</span>
+            <div style={{ marginTop: 'auto', paddingTop: 6, borderTop: '1px solid var(--r-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 10, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--r-muted)' }}>APC</span>
               <span style={{ fontFamily: 'var(--font-report-mono)', fontSize: 12.5, fontWeight: 700, color: c.last ? 'var(--navy-700)' : 'var(--r-ink)' }}>{c.sub}</span>
             </div>
           )}

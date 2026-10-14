@@ -6,12 +6,15 @@ import type { ReportFigure } from './figure';
 // component (KPI strip, matrix, costing table) renders the same way for the same case.
 export const NEEDS_DATA_LABEL = 'Needs data';
 
+// The report shows plain figures — no ₹ symbol anywhere (the app UI keeps it).
+const stripRupee = (s: string) => s.replace('₹', '');
+
 export function moneyShort(f: ReportFigure): string {
-  return f.status === 'ok' ? formatINRShort(f.value) : NEEDS_DATA_LABEL;
+  return f.status === 'ok' ? stripRupee(formatINRShort(f.value)) : NEEDS_DATA_LABEL;
 }
 
 export function money(f: ReportFigure): string {
-  return f.status === 'ok' ? formatINR(f.value) : NEEDS_DATA_LABEL;
+  return f.status === 'ok' ? stripRupee(formatINR(f.value)) : NEEDS_DATA_LABEL;
 }
 
 export function pct(f: ReportFigure): string {

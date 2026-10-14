@@ -14,8 +14,9 @@ const ExtractedTableSchema = z.object({
 export type ExtractedTable = z.infer<typeof ExtractedTableSchema>;
 
 const EXTRACT_TIMEOUT_MS = 45_000;
-const GEMINI_MODEL = 'gemini-2.5-flash';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+// gpt-4o-mini fabricated/blended rows on dense registers (see ADR-0014 addendum).
+const OPENAI_MODEL = 'gpt-4o';
+const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 
 function mimeTypeFor(filename: string): string {
   const ext = filename.split('.').pop()?.toLowerCase();
@@ -29,34 +30,44 @@ function toBase64(bytes: ArrayBuffer): string {
   return Buffer.from(bytes).toString('base64');
 }
 
-async function callGemini(prompt: string, imageBytes: ArrayBuffer, mimeType: string): Promise<ExtractedTable> {
-  const res = await fetch(`${GEMINI_URL}?key=${process.env.GEMINI_API_KEY}`, {
+async function callOpenAi(prompt: string, imageBytes: ArrayBuffer, mimeType: string): Promise<ExtractedTable> {
+  const res = await fetch(OPENAI_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
     body: JSON.stringify({
-      contents: [
+      model: OPENAI_MODEL,
+      response_format: { type: 'json_object' },
+      temperature: 0,
+      messages: [
         {
-          parts: [{ text: prompt }, { inlineData: { mimeType, data: toBase64(imageBytes) } }],
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${toBase64(imageBytes)}`, detail: 'high' } },
+          ],
         },
       ],
-      generationConfig: { responseMimeType: 'application/json' },
     }),
   });
-  if (!res.ok) throw new Error(`Gemini request failed: ${res.status}`);
-  const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
-  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!content) throw new Error('Gemini response missing content');
+  if (!res.ok) throw new Error(`OpenAI request failed: ${res.status}`);
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error('OpenAI response missing content');
+  if (process.env.NODE_ENV !== 'production') console.log('[extractEvidenceTable] raw model output:', content);
   return ExtractedTableSchema.parse(JSON.parse(content));
 }
 
-// B7/ADR-0012 — vision OCR/data-entry, distinct from narration (ADR-0004) and from
-// severity classification (ADR-0011): Gemini transcribes exactly what's visible under
-// the recipe's fixed columns, never computing or inferring a value. Triggered right
-// after the auditor picks an evidence type for a photo (fire-and-forget from
-// setEvidencePhotoType, lib/actions/checklist.ts) — never blocks upload or submit, and
-// a failure here is never surfaced to the auditor. The extracted table shows
-// immediately once done, editable/overridable by the reviewer exactly like AI-assigned
-// severity — no separate confirm step.
+// B7/ADR-0012, provider swapped to OpenAI by ADR-0014 — vision OCR/data-entry, distinct
+// from narration (ADR-0004) and from severity classification (ADR-0011): the model
+// transcribes exactly what's visible under the recipe's fixed columns, never computing
+// or inferring a value. Triggered right after the auditor picks an evidence type for a
+// photo (fire-and-forget from setEvidencePhotoType, lib/actions/checklist.ts) — never
+// blocks upload or submit, and a failure here is never surfaced to the auditor. The
+// extracted table shows immediately once done, editable/overridable by the reviewer
+// exactly like AI-assigned severity — no separate confirm step.
 export async function extractEvidenceTable(fileId: string): Promise<void> {
   try {
     const [file] = await db
@@ -76,7 +87,7 @@ export async function extractEvidenceTable(fileId: string): Promise<void> {
 
     const bytes = await downloadFile(file.storagePath);
     const parsed = await withTimeout(
-      callGemini(evidenceExtractionPrompt(file.evidenceType as EvidencePhotoType), bytes, mimeTypeFor(file.name)),
+      callOpenAi(evidenceExtractionPrompt(file.evidenceType as EvidencePhotoType), bytes, mimeTypeFor(file.name)),
       EXTRACT_TIMEOUT_MS,
     );
 
@@ -85,7 +96,7 @@ export async function extractEvidenceTable(fileId: string): Promise<void> {
       .set({
         extractionStatus: 'extracted',
         extractedTable: parsed,
-        extractionModel: GEMINI_MODEL,
+        extractionModel: OPENAI_MODEL,
         extractedAt: new Date(),
       })
       .where(eq(auditItemFiles.id, fileId));

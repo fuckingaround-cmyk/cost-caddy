@@ -71,7 +71,7 @@ export function ComplianceSection({
   const cPassed = allItems.filter((i) => i.status === 'pass').length;
 
   return (
-    <section data-break="" style={{ marginBottom: 32 }}>
+    <section data-gap="" style={{ marginBottom: 32 }}>
       <SectionHeading label="Section 2 · Department Checklists & Compliance Matrix" right={`${departments.length} departments · ${cTotal} checkpoints`} />
 
       {showSummaryRibbon && (

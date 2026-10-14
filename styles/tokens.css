@@ -74,10 +74,20 @@
   --report-sev-low-bg: #f5f5f5;
   --report-sev-low-fg: #666666;
 
+  /* Report §3 POS Report callouts — light red for Findings and Observations, light green
+     for Corrective Measures. */
+  --report-pos-findings-bg: #fef2f2;
+  --report-pos-findings-fg: #b91c1c;
+  --report-pos-corrective-bg: #f0fdf4;
+  --report-pos-corrective-fg: #15803d;
+
   /* Report §1 composition donuts (added during C4) — Audit report v4.dc.html's own
      chart palette (~line 208-265). Teals for sales composition, rust tones for cost
      composition; --status-pass-bg-deep/-fg/-dot are the same teals already used
      elsewhere, reused here rather than duplicated. */
+  --report-chart-teal-1: #5a9e8f;
+  --report-chart-teal-2: #7ab3a6;
+  --report-chart-teal-3: #a9d0c6;
   --report-chart-teal-4: #8fc5b8;
   --report-chart-teal-5: #cfe3dd;
   --report-chart-rust-1: #7a2e14;

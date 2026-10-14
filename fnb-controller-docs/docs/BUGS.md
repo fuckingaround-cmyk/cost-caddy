@@ -889,3 +889,35 @@ History:
   against the build output that `browsers.json` is now listed in the route trace files, rather than just
   assuming the config change worked.
 
+<!-- Next real bug starts at BUG-028. -->
+
+## BUG-028 — Checklist remark: pasting/attaching a screenshot did nothing
+Status: fixed · Area: app/auditor/(protected)/checklist/[id]/ChecklistStep.tsx (B3/B4 checklist capture)
+
+Repro:      Open a checklist item, mark it Fail/N-A, focus the remark box, paste a copied screenshot
+            (Ctrl/Cmd+V) — nothing happens; no image attaches and no error appears. The only working
+            attach paths were the Camera/Gallery/File buttons.
+Root cause: `Auditor Flow - Mobile.dc.html:161-180` and `Auditor Flow - Laptop.dc.html:163-182` both spec
+            a fourth "Paste screenshot" button (dashed border) alongside Camera/Gallery/File, bound to
+            `onPasteShot`. Only the three file-input-backed buttons (`AttachButton`, ChecklistStep.tsx)
+            were built in B3; the paste affordance was dropped and never tracked as a task or bug, so the
+            remark textarea itself also had no `onPaste` handler (`grep -rn onPaste app` was empty).
+Fix:        (1) Added an `onPaste` handler directly on the remark `<textarea>` — if the clipboard event
+            carries an image file, it's routed into the existing `addPhotos` upload pipeline instead of
+            being dropped. (2) Added the design-specced "Paste screenshot" button in `PhotoAttach`, using
+            `navigator.clipboard.read()` (Async Clipboard API) so it also works when focus isn't in the
+            textarea, with an inline error message if the browser blocks clipboard read or there's no
+            image on the clipboard. Both paths reuse `addPhotos`/`uploadItemPhoto` unchanged, so
+            compression, evidence-type suggestion (ADR-0012), and the upload-in-progress UI all apply.
+Guard:      `npx tsc --noEmit` passes. Manual — copy an image (e.g. a screenshot), paste it with focus in
+            a remark box and confirm it attaches; click "Paste screenshot" with focus elsewhere on the
+            page and confirm the same; clear the clipboard and click "Paste screenshot" again, confirm the
+            inline "No image found" message appears instead of a silent no-op.
+Related:    F&B Controller audit platform/Auditor Flow - Mobile.dc.html,
+            F&B Controller audit platform/Auditor Flow - Laptop.dc.html,
+            app/auditor/(protected)/checklist/[id]/ChecklistStep.tsx
+
+History:
+- 2026-09-27  opened (user reported being unable to paste/attach an image in the remarks section)
+- 2026-09-27  fixed + guard added
+

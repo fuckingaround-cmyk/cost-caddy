@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { updateEvidenceTable, retryEvidenceExtraction } from '@/lib/actions/review';
+import { retryEvidenceExtraction } from '@/lib/actions/review';
 import { EVIDENCE_PHOTO_TYPE_LABELS } from '@/lib/evidence/types';
 import type { ReviewPhoto } from './ReviewItemRow';
 
@@ -11,37 +11,16 @@ const STATUS_LABEL: Record<NonNullable<ReviewPhoto['extractionStatus']>, string>
   failed: 'Extraction failed',
 };
 
-// B7/ADR-0012 — every extracted cell is reviewer-editable, the same trust model
-// updateFinding() already gives severity: no separate confirm step. A photo whose
-// extraction failed (or is still pending) shows the status and a retry instead of a
-// table.
+// The table transcribed from a POS report photo (ADR-0012/ADR-0015). Read-only on purpose:
+// cells are a verbatim transcription and are not editable — the admin can only see the
+// status, open the original photo, and Retry a failed/misread extraction.
 export function EvidenceTablePanel({ auditId, photo }: { auditId: string; photo: ReviewPhoto }) {
   const table = photo.extractedTable;
-  const [editing, setEditing] = useState(false);
-  const [rows, setRows] = useState<string[][]>(table?.rows ?? []);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const columns = table?.columns ?? [];
   const typeLabel = photo.evidenceType ? EVIDENCE_PHOTO_TYPE_LABELS[photo.evidenceType] : '';
-
-  const save = () => {
-    setError(null);
-    startTransition(async () => {
-      try {
-        await updateEvidenceTable(photo.id, auditId, { columns, rows });
-        setEditing(false);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Could not save the table.');
-      }
-    });
-  };
-
-  const cancel = () => {
-    setRows(table?.rows ?? []);
-    setError(null);
-    setEditing(false);
-  };
 
   const retry = () => {
     setError(null);
@@ -54,12 +33,7 @@ export function EvidenceTablePanel({ auditId, photo }: { auditId: string; photo:
     });
   };
 
-  const setCell = (r: number, c: number, value: string) => {
-    setRows((prev) => prev.map((row, ri) => (ri === r ? row.map((cell, ci) => (ci === c ? value : cell)) : row)));
-  };
-
-  const addRow = () => setRows((prev) => [...prev, columns.map(() => '')]);
-  const removeRow = (r: number) => setRows((prev) => prev.filter((_, ri) => ri !== r));
+  const linkStyle = { border: 'none', background: 'none', color: 'var(--muted)', fontSize: 12, textDecoration: 'underline', padding: 0, cursor: 'pointer' } as const;
 
   return (
     <div style={{ marginTop: 10, border: '1px solid var(--border-card)', borderRadius: 'var(--radius-panel)', padding: '12px 14px', background: 'var(--surface-alt-2)' }}>
@@ -75,13 +49,12 @@ export function EvidenceTablePanel({ auditId, photo }: { auditId: string; photo:
       </div>
 
       {photo.extractionStatus === null && <div style={{ fontSize: 12, color: 'var(--muted)' }}>Queued for extraction…</div>}
-
-      {photo.extractionStatus === 'pending' && <div style={{ fontSize: 12, color: 'var(--muted)' }}>Gemini is reading this photo…</div>}
+      {photo.extractionStatus === 'pending' && <div style={{ fontSize: 12, color: 'var(--muted)' }}>Reading this photo…</div>}
 
       {photo.extractionStatus === 'failed' && (
         <div style={{ fontSize: 12, color: 'var(--status-fail-fg-app)' }}>
           Could not extract a table from this photo.{' '}
-          <button type="button" disabled={pending} onClick={retry} style={{ border: 'none', background: 'none', color: 'inherit', textDecoration: 'underline', cursor: 'pointer', padding: 0 }}>
+          <button type="button" disabled={pending} onClick={retry} style={{ ...linkStyle, color: 'inherit' }}>
             Retry
           </button>
         </div>
@@ -98,34 +71,16 @@ export function EvidenceTablePanel({ auditId, photo }: { auditId: string; photo:
                       {c}
                     </th>
                   ))}
-                  {editing && <th style={{ width: 24 }} />}
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row, ri) => (
+                {table.rows.map((row, ri) => (
                   <tr key={ri}>
-                    {row.map((cell, ci) =>
-                      editing ? (
-                        <td key={ci} style={{ padding: '2px 4px' }}>
-                          <input
-                            value={cell}
-                            onChange={(e) => setCell(ri, ci, e.target.value)}
-                            style={{ width: '100%', padding: '5px 6px', border: '1px solid var(--border)', borderRadius: 'var(--radius-control)', fontSize: 12 }}
-                          />
-                        </td>
-                      ) : (
-                        <td key={ci} style={{ padding: '5px 6px', borderBottom: '1px solid var(--divider)', color: 'var(--ink-2)' }}>
-                          {cell || '—'}
-                        </td>
-                      ),
-                    )}
-                    {editing && (
-                      <td>
-                        <button type="button" onClick={() => removeRow(ri)} style={{ border: 'none', background: 'none', color: 'var(--placeholder)', cursor: 'pointer' }}>
-                          ✕
-                        </button>
+                    {row.map((cell, ci) => (
+                      <td key={ci} style={{ padding: '5px 6px', borderBottom: '1px solid var(--divider)', color: 'var(--ink-2)' }}>
+                        {cell || '—'}
                       </td>
-                    )}
+                    ))}
                   </tr>
                 ))}
               </tbody>
@@ -135,38 +90,16 @@ export function EvidenceTablePanel({ auditId, photo }: { auditId: string; photo:
           {error && <div style={{ color: 'var(--status-fail-fg-app)', fontSize: 12, marginTop: 8 }}>{error}</div>}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginTop: 10, paddingTop: 9, borderTop: '1px solid var(--divider)' }}>
-            {photo.url && (
+            {photo.url ? (
               <a href={photo.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: 'var(--muted)' }}>
                 View original photo
               </a>
-            )}
-            {!editing ? (
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button type="button" disabled={pending} onClick={retry} style={{ border: 'none', background: 'none', color: 'var(--muted)', fontSize: 12, textDecoration: 'underline', padding: 0, cursor: 'pointer' }}>
-                  Retry
-                </button>
-                <button type="button" onClick={() => setEditing(true)} style={{ border: 'none', background: 'none', color: 'var(--muted)', fontSize: 12, textDecoration: 'underline', padding: 0, cursor: 'pointer' }}>
-                  Edit table
-                </button>
-              </div>
             ) : (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" onClick={addRow} style={{ padding: '6px 10px', border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 'var(--radius-control)', fontSize: 12, cursor: 'pointer' }}>
-                  + Row
-                </button>
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={save}
-                  style={{ padding: '6px 12px', border: '1px solid var(--navy-700)', background: 'var(--navy-700)', color: '#fff', borderRadius: 'var(--radius-control)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-                >
-                  {pending ? 'Saving…' : 'Save'}
-                </button>
-                <button type="button" disabled={pending} onClick={cancel} style={{ padding: '6px 12px', border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 'var(--radius-control)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                  Cancel
-                </button>
-              </div>
+              <span />
             )}
+            <button type="button" disabled={pending} onClick={retry} style={linkStyle}>
+              {pending ? 'Retrying…' : 'Retry extraction'}
+            </button>
           </div>
         </>
       )}
