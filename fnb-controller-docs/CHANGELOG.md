@@ -8,6 +8,7 @@ and DESIGN Part B). One dated line per shipped thing.
 ### 2026-10-15
 - Changed: the report's compliance section now lists failed checkpoints only (no Pass/N/A rows), with columns Checkpoint, Observation, Risk Severity, Operational Impact, Corrective Action, SLA, Evidence (UX-034, ADR-0019).
 - Changed: report observations show only the AI-polished text (never the auditor's raw remark), and only Fail remarks are sent to OpenAI at submit (ADR-0019).
+- Changed: "Generate report" now retries the AI polish for failed checkpoints the submit-time job missed (leaving existing finding fields alone), and AI job failures are logged to the server console (ADR-0019).
 - Changed: POS register photos are no longer read at upload; after submit one backend OpenAI call extracts each photo's table and writes the Findings and Corrective Measures (editable by the admin) (ADR-0018).
 - Changed: remark polish, severity scoring and POS register findings now run on OpenAI instead of DeepSeek; `DEEPSEEK_API_KEY` is no longer used (ADR-0017).
 - Changed: the auditor's "Other Observations" point is an optional catch-all — it can stay pending and needs no N/A reason or remark to submit (UX-031).

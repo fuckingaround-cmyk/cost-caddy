@@ -10,6 +10,7 @@ import { deleteFile, operationalFilePath, uploadFile } from '@/lib/storage';
 import { parseOperationalFile } from '@/lib/operational/parseFile';
 import { NA_REASONS } from '@/lib/checklist/naReasons';
 import { classifyFinding, type Severity } from '@/lib/report/classify';
+import { scoreAuditRemarks } from '@/lib/ai/scoreAuditRemarks';
 import { analyseRegisterEvidence, analyseRegisterItem } from '@/lib/ai/analyseRegisterEvidence';
 import { generateRegisterFindingsForItem } from '@/lib/ai/generateRegisterFindings';
 import type { EvidencePhotoType } from '@/lib/evidence/types';
@@ -43,8 +44,9 @@ export async function correctAuditItem(
   if (status === 'fail' && remark.trim() === '') {
     throw new Error('A remark is required for Fail.');
   }
-  if (status === 'na' && (!naReason || !NA_REASONS.includes(naReason as (typeof NA_REASONS)[number]))) {
-    throw new Error('N/A requires one of the fixed reasons.');
+  // N/A needs no reason (UX-031); if one is given it must be a fixed reason.
+  if (status === 'na' && naReason && !NA_REASONS.includes(naReason as (typeof NA_REASONS)[number])) {
+    throw new Error('N/A reason must be one of the fixed reasons.');
   }
 
   // A status correction can turn a former finding into a Pass/N-A, or a former
@@ -165,6 +167,10 @@ export async function replaceOperationalFile(fileId: string, auditId: string, fo
 // impact or action — EXECUTION.md C3 done-when).
 export async function generateReport(auditId: string): Promise<void> {
   await requireReviewableAudit(auditId);
+
+  // Retry the AI polish for any Fail point the submit-time job missed (never throws), so the
+  // report's observations don't depend on that one background run succeeding.
+  await scoreAuditRemarks(auditId, { onlyUnpolished: true });
 
   const items = await db
     .select({ id: auditItems.id, code: auditItems.code, label: auditItems.label, remark: auditItems.remark, status: auditItems.status, severity: auditItems.severity })

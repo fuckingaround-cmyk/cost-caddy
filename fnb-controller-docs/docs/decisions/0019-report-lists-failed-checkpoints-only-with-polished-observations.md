@@ -18,7 +18,9 @@ to the model for text no one would read.
 - Columns follow the owner's order; the Ref ID column is dropped. The ribbon is Failed / High / Medium / Low.
 
 ## Consequences
-- Fewer tokens per submit. A failed AI job leaves blank observations in the report (the finding fields still
-  come from C3's fallback); the admin can fix them via the finding editor or by correcting the point.
+- Fewer tokens per submit. "Generate report" retries the polish for Fail points the submit job missed
+  (`scoreAuditRemarks(auditId, { onlyUnpolished: true })`): it sets only the observation on points that already
+  have finding fields (classifier- or reviewer-set) and fills all fields on points that have none. If that retry
+  also fails, observations stay "—" (finding fields still come from C3's fallback).
 - The reviewer screen and auditor's own view still show the item's stored remark — polished once the job ran.
 - Checkpoint photos are not sent to the model; only POS register photos are (ADR-0018).

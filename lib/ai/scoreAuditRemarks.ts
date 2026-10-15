@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { auditItems, audits } from '@/db/schema';
 import { SEVERITY_RUBRIC } from './severityRubric';
@@ -75,14 +75,18 @@ async function callOpenAI(items: { id: string; checkpoint: string; department: s
 // must never surface to the auditor or touch the submit itself: the audit is already
 // `submitted`. On failure, findings simply stay unset until classifyFinding (C3, now a
 // fallback) fills them at "Generate report".
-export async function scoreAuditRemarks(auditId: string): Promise<void> {
+//
+// `onlyUnpolished` is the "Generate report" retry: it only touches Fail points the submit-time
+// run never reached (no aiAssessment) and leaves any finding fields already set — by the
+// classifier fallback or by the reviewer — alone, updating just the observation.
+export async function scoreAuditRemarks(auditId: string, opts: { onlyUnpolished?: boolean } = {}): Promise<void> {
   try {
     const items = await db
-      .select({ id: auditItems.id, code: auditItems.code, cat: auditItems.cat, label: auditItems.label, remark: auditItems.remark, status: auditItems.status })
+      .select({ id: auditItems.id, code: auditItems.code, cat: auditItems.cat, label: auditItems.label, remark: auditItems.remark, status: auditItems.status, severity: auditItems.severity, polished: sql<boolean>`${auditItems.aiAssessment} is not null` })
       .from(auditItems)
       .where(and(eq(auditItems.auditId, auditId), eq(auditItems.section, 'checklist')));
 
-    const toScore = items.filter((it) => it.status === 'fail' && it.remark.trim() !== '');
+    const toScore = items.filter((it) => it.status === 'fail' && it.remark.trim() !== '' && !(opts.onlyUnpolished && it.polished));
     if (toScore.length === 0) {
       await db.update(audits).set({ aiState: 'ready' }).where(eq(audits.id, auditId));
       return;
@@ -101,7 +105,7 @@ export async function scoreAuditRemarks(auditId: string): Promise<void> {
         const scored = scoredById.get(it.id);
         if (!scored || scored.polishedRemark.trim() === '') continue;
 
-        if (scored.severity && scored.category && scored.impact && scored.correctiveAction && scored.sla && scored.ownership) {
+        if (!(opts.onlyUnpolished && it.severity !== null) && scored.severity && scored.category && scored.impact && scored.correctiveAction && scored.sla && scored.ownership) {
           await tx
             .update(auditItems)
             .set({
@@ -124,7 +128,8 @@ export async function scoreAuditRemarks(auditId: string): Promise<void> {
       }
       await tx.update(audits).set({ aiState: 'ready' }).where(eq(audits.id, auditId));
     });
-  } catch {
+  } catch (e) {
+    console.error('[scoreAuditRemarks] failed for audit', auditId, e);
     // Never blocks or reverses the submit (ADR-0004/ADR-0011) — unpolished remarks pass
     // through verbatim and Fail items simply have no finding yet; classifyFinding (C3)
     // is the fallback that fills severity/finding fields at "Generate report".

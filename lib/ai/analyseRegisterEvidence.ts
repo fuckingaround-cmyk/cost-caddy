@@ -219,7 +219,8 @@ export async function analyseRegisterEvidence(auditId: string, opts: { onlyMissi
       if (hasFindings.has(`${it.reportType}|${posFindingsKey(it.reportType, it.label)}`) && !unreadPhotos.has(it.id)) continue;
       try {
         await analyseRegisterItem(it.id, { keepExistingFindings: opts.onlyMissing });
-      } catch {
+      } catch (e) {
+        console.error('[analyseRegisterEvidence] failed for item', it.id, e);
         // Best-effort per report — see above.
       }
     }
