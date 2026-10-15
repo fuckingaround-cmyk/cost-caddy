@@ -204,7 +204,7 @@ function AuditForm({
         </div>
       )}
       <div style={{ fontSize: 12, color: 'var(--muted-2)', marginTop: 'var(--space-6)' }}>
-        The audit appears in the auditor's portal on create — no link to send, no login setup
+        The audit appears in the auditor&apos;s portal on create — no link to send, no login setup
         needed.
       </div>
     </form>

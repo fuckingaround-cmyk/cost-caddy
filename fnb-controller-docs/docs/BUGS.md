@@ -942,3 +942,23 @@ Related:    BUG-020, BUG-021 (same pattern: builder forced a category default), 
 History:
 - 2026-10-14  opened (user reported 115.67% where 158.70% expected)
 - 2026-10-14  fixed + guard added
+
+## BUG-030 — POS register extraction shifted columns when the photo had an unexpected column or a blank cell
+Status: fixed · Area: lib/ai/evidenceRecipes, lib/ai/analyseRegisterEvidence, POS report tables
+
+Repro:      Item-cancellation register photo with a KOT NO column (between Bill No and Order Time) and a blank
+            Bill No on the first row: every cell after Bill No landed one column to the left (KOT under Order
+            Time, order time under Cancel Time, …) and the blank Bill No was filled with an invented value.
+Root cause: The fixed recipe (ADR-0012) had 14 columns and the prompt demanded exactly 14 cells per row, but the
+            photo had 15. With no slot for KOT NO the model absorbed it into the next column. The renderers also
+            looped over each row's own cells, so any row of a different length misaligned against the header.
+Fix:        ADR-0020 — recipe is a hint only; the model returns the photo's own headers with one cell per header
+            (blanks as "" in place); `normaliseExtractedTable` fixes row width before storage; both renderers
+            draw by header position.
+Guard:      lib/evidence/normaliseTable.test.ts — short rows are padded (blanks never shift later cells), extra
+            cells are folded not dropped, arbitrary columns pass through unchanged.
+Related:    ADR-0012, ADR-0020, ADR-0018
+
+History:
+- 2026-10-15  opened (user reported shifted columns on item cancellation register)
+- 2026-10-15  fixed + guard added

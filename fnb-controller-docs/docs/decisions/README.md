@@ -28,5 +28,6 @@ and are where *new* decisions get recorded going forward.
 | [0017](0017-openai-replaces-deepseek-for-text-jobs.md) | OpenAI (`gpt-4o-mini`) replaces DeepSeek for remark scoring and register findings — single LLM provider | accepted | 2026-10-15 |
 | [0018](0018-single-backend-call-reads-register-photos-and-writes-findings.md) | One backend OpenAI call after submit reads register photos and writes their findings (no AI at upload) | accepted | 2026-10-15 |
 | [0019](0019-report-lists-failed-checkpoints-only-with-polished-observations.md) | Report lists failed checkpoints only; only Fail remarks go to the AI; raw remarks never reach the report | accepted | 2026-10-15 |
+| [0020](0020-register-tables-follow-the-photo-not-a-fixed-recipe.md) | Register tables use the photo's own columns; recipes are hints only (supersedes ADR-0012's fixed recipes) | accepted | 2026-10-15 |
 
 Statuses: proposed · accepted · superseded (note which ADR supersedes it).

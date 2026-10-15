@@ -215,8 +215,8 @@ now; `EXECUTION.md` R12).
   carries no severity" keeps holding after an edit.
 - **Evidence-photo read + findings** (`lib/ai/analyseRegisterEvidence.ts`, ADR-0018, supersedes the
   two-step flow of ADR-0012/0015, **B7/C6**) is one OpenAI vision call per POS report: every photo of the
-  register plus the auditor's status/remark in; each photo's verbatim table (fixed recipe columns,
-  `lib/ai/evidenceRecipes.ts`) and the Findings and Observations + Corrective Measures out. Nothing is
+  register plus the auditor's status/remark in; each photo's verbatim table (the photo's own columns — recipes in
+  `lib/ai/evidenceRecipes.ts` are hints only, ADR-0020) and the Findings and Observations + Corrective Measures out. Nothing is
   read at upload or in the auditor's request — `submitAudit` queues it with `after()` (alongside
   `scoreAuditRemarks`, in parallel), so the auditor is never blocked. Tables are stored per photo
   (`audit_item_files.extracted_table`), findings per report (`audit_evidence_findings`, keyed
@@ -279,7 +279,7 @@ Correctness load-bearers — encode in schema, guard in review:
   **reviewer**, never in the field. **ADR-0004** / UX-010 — this reverses the earlier
   "remarks are quoted, not rewritten" rule and records the trade-off.
 - **Evidence-table extraction is verbatim OCR, not narration or computation.** OpenAI transcribes
-  exactly what's visible in an evidence photo under a fixed recipe's columns — it never sums, rounds,
+  exactly what's visible in an evidence photo under the photo's own columns (ADR-0020) — it never sums, rounds,
   recomputes a percentage, or invents an illegible cell. D12 ("LLM never computes") is narrowed a
   second time to state this plainly, the same way ADR-0011 narrowed it for severity. **ADR-0012** /
   UX-026.

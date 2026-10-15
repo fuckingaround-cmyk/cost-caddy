@@ -66,8 +66,8 @@ export function EvidenceTablePanel({ auditId, photo }: { auditId: string; photo:
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
                 <tr>
-                  {columns.map((c) => (
-                    <th key={c} style={{ textAlign: 'left', padding: '4px 6px', borderBottom: '1px solid var(--divider)', color: 'var(--muted-2)', fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  {columns.map((c, ci) => (
+                    <th key={ci} style={{ textAlign: 'left', padding: '4px 6px', borderBottom: '1px solid var(--divider)', color: 'var(--muted-2)', fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                       {c}
                     </th>
                   ))}
@@ -76,9 +76,9 @@ export function EvidenceTablePanel({ auditId, photo }: { auditId: string; photo:
               <tbody>
                 {table.rows.map((row, ri) => (
                   <tr key={ri}>
-                    {row.map((cell, ci) => (
+                    {columns.map((_, ci) => (
                       <td key={ci} style={{ padding: '5px 6px', borderBottom: '1px solid var(--divider)', color: 'var(--ink-2)' }}>
-                        {cell || '—'}
+                        {row[ci] || '—'}
                       </td>
                     ))}
                   </tr>

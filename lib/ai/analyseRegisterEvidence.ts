@@ -5,9 +5,10 @@ import { auditEvidenceFindings, auditItemFiles, auditItems } from '@/db/schema';
 import { downloadFile } from '@/lib/storage';
 import { posFindingsKey } from '@/lib/evidence/types';
 import type { EvidencePhotoType } from '@/lib/evidence/types';
-import { EVIDENCE_RECIPES, evidenceTranscriptionRules } from './evidenceRecipes';
+import { evidenceTranscriptionRules } from './evidenceRecipes';
 import { EVIDENCE_FINDINGS_POLICY_CONTEXT } from './evidenceFindingsPolicyContext';
 import { REGISTER_FINDINGS_RULES, generateRegisterFindingsForItem } from './generateRegisterFindings';
+import { normaliseExtractedTable } from '@/lib/evidence/normaliseTable';
 import { withTimeout } from './withTimeout';
 
 const TableSchema = z.object({ columns: z.array(z.string()), rows: z.array(z.array(z.string())) });
@@ -28,7 +29,6 @@ function mimeTypeFor(filename: string): string {
 }
 
 function systemPrompt(type: EvidencePhotoType, photoCount: number): string {
-  const columns = EVIDENCE_RECIPES[type].columns;
   return `
 You are processing one POS register section (e.g. the discount register) of a restaurant audit. You
 are given the field auditor's status and remark for it and ${photoCount} photo(s) of the register. Do two
@@ -45,8 +45,9 @@ ${EVIDENCE_FINDINGS_POLICY_CONTEXT}
 ${REGISTER_FINDINGS_RULES}
 
 Respond with a single JSON object of the exact shape:
-{"tables": [{"columns": ${JSON.stringify(columns)}, "rows": [["...", "..."], ...]}, ...], "findings": "...", "correctiveMeasures": "..."}
+{"tables": [{"columns": ["<header 1 as printed>", "<header 2 as printed>", ...], "rows": [["...", "..."], ...]}, ...], "findings": "...", "correctiveMeasures": "..."}
 "tables" must have exactly ${photoCount} entries, one per photo, in the order the photos are given.
+Each table's "columns" are that photo's own printed headers, and every row has exactly as many entries as "columns".
 `.trim();
 }
 
@@ -145,7 +146,7 @@ export async function analyseRegisterItem(itemId: string, opts: { keepExistingFi
   for (const [i, f] of files.entries()) {
     await db
       .update(auditItemFiles)
-      .set({ extractionStatus: 'extracted', extractedTable: result.tables[i], extractionModel: OPENAI_VISION_MODEL, extractedAt: now })
+      .set({ extractionStatus: 'extracted', extractedTable: normaliseExtractedTable(result.tables[i]), extractionModel: OPENAI_VISION_MODEL, extractedAt: now })
       .where(eq(auditItemFiles.id, f.id));
   }
 

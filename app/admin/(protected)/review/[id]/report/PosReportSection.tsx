@@ -39,15 +39,16 @@ export function PosReportSection({ reports }: { reports: PosReport[] }) {
                     <table data-pos-table="" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 12 }}>
                       <thead>
                         <tr style={{ borderBottom: '1px solid var(--r-border-2)', fontSize: 10.5, fontWeight: 600, color: 'var(--r-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                          {t.columns.map((c) => (
-                            <th key={c} style={{ padding: '8px 12px' }}>{c}</th>
+                          {t.columns.map((c, ci) => (
+                            <th key={ci} style={{ padding: '8px 12px' }}>{c}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {t.rows.map((row, ri) => (
                           <tr key={ri} style={{ borderBottom: '1px solid var(--r-border)', background: ri % 2 === 1 ? 'var(--r-surface-alt-2)' : '#fff' }}>
-                            {row.map((cell, ci) => {
+                            {t.columns.map((_, ci) => {
+                              const cell = row[ci] ?? '';
                               const numeric = /^[\d.,₹%\s-]*$/.test(cell) && cell.trim() !== '';
                               return (
                                 <td
