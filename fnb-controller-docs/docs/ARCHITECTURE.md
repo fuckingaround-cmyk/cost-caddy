@@ -229,7 +229,9 @@ now; `EXECUTION.md` R12).
   to a stored cell), stored in `audit_evidence_findings`. "Generate report" fills missing ones; the admin can
   edit, Save or Regenerate. The prompt forbids computing an exact numeric delta against the plain-text policy
   context (`lib/ai/evidenceFindingsPolicyContext.ts`), keeping D12 intact. POS items are excluded from the
-  compliance matrix, scoring, `scoreAuditRemarks` and `classifyFinding`.
+  compliance matrix, scoring, `scoreAuditRemarks` and `classifyFinding`. A report is a preset type or an
+  admin-named custom one (`report_type = 'other'` + `template_pos_reports.label`); findings are keyed
+  `(audit_id, evidence_type, report_label)` (`posFindingsKey` — `''` for presets, the name for custom).
 - **Report v4** (`app/admin/(protected)/review/[id]/report/`) has its own type system (Inter Tight +
   IBM Plex Mono `tabular-nums`, Material Symbols), is print-first (`[data-avoid]`/`[data-break]` in
   `globals.css`), and renders §1 (KPI strip + revenue matrix + two composition donuts), §1B (costing via

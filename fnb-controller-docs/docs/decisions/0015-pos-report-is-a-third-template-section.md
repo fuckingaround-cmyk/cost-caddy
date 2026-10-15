@@ -50,3 +50,9 @@ from what the auditor already captured rather than from the admin.
 - The submit job is now sequential external calls inside one `after()`; keep per-call timeouts and watch the
   route's `maxDuration` on Vercel.
 - Recorded as DESIGN Part B **UX-028**.
+
+## Addendum (2026-10-15) — custom-named reports
+A template may also hold admin-named reports: stored as `report_type = 'other'` with the name in the new
+`template_pos_reports.label` (unique per template on type + label). `audit_evidence_findings` gains
+`report_label` (`''` for presets) so several custom reports on one audit don't share a write-up; its unique
+key is now `(audit_id, evidence_type, report_label)`. Migration 0013. Recorded as DESIGN **UX-032**.

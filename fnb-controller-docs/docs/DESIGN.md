@@ -533,3 +533,7 @@ APC is the term the clients use. **Trade-off:** supersedes the v4 design's six-c
 ### UX-031 — Other Observations is an optional catch-all (client feedback, 2026-10-15)
 **Decision:** a `freeform` checklist point ("Other Observations - <dept>") always counts as answered — it may stay pending, and if the auditor does mark it N/A the reason is optional, as is the remark. The same `isItemAnswered` check runs client-side and in `submitAudit`. Pass already needed no remark; unchanged.
 **Why:** it is a catch-all for anything not covered; forcing a status, reason or remark made auditors invent filler to submit. **Trade-off:** supersedes UX-009/R10's remark/reason requirement for freeform points only.
+
+### UX-032 — POS Report section accepts any report (client feedback, 2026-10-15)
+**Decision:** the template builder's POS Report dropdown offers the four presets (once each) plus "Other (custom name)…", which reveals a text box; Add (or Enter) appends it. Duplicate names (case-insensitive) are ignored. The dropdown never disables.
+**Why:** the fixed list emptied out as presets were added and blocked reports an outlet's POS actually produces (void, settlement…). **Trade-off:** custom reports use the generic "other register" extraction prompt, not a tuned recipe.
