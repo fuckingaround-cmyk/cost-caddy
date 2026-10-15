@@ -1,19 +1,34 @@
 import { describe, expect, it } from 'vitest';
-import { normaliseExtractedTable } from './normaliseTable';
+import { tableFromKeyedRows } from './normaliseTable';
 
-describe('normaliseExtractedTable', () => {
+describe('tableFromKeyedRows', () => {
   it('keeps the photo\'s own columns, whatever they are', () => {
-    const t = normaliseExtractedTable({ columns: ['Bill No', 'KOT NO', 'Amount'], rows: [['3962', '71', '1,450']] });
-    expect(t.columns).toEqual(['Bill No', 'KOT NO', 'Amount']);
-    expect(t.rows).toEqual([['3962', '71', '1,450']]);
+    const { table, anomalies } = tableFromKeyedRows(['Bill No', 'KOT NO', 'Amount'], [{ 'Bill No': '3962', 'KOT NO': '71', Amount: '1,450' }]);
+    expect(table).toEqual({ columns: ['Bill No', 'KOT NO', 'Amount'], rows: [['3962', '71', '1,450']] });
+    expect(anomalies).toBe(0);
   });
-  it('pads short rows so later cells never shift left', () => {
-    expect(normaliseExtractedTable({ columns: ['a', 'b', 'c'], rows: [['1', '2']] }).rows).toEqual([['1', '2', '']]);
+  it('a dropped cell is a blank in its own place — later cells never shift', () => {
+    const { table, anomalies } = tableFromKeyedRows(['Waiter', 'Cancelled By', 'Remark'], [{ 'Cancelled By': 'SHEKHAR', Remark: 'Time limit exceeded' }]);
+    expect(table.rows).toEqual([['', 'SHEKHAR', 'Time limit exceeded']]);
+    expect(anomalies).toBe(1);
   });
-  it('folds extra cells into the last cell instead of dropping them', () => {
-    expect(normaliseExtractedTable({ columns: ['a', 'b'], rows: [['1', '2', '3']] }).rows).toEqual([['1', '2 3']]);
+  it('keeps a legitimately blank cell without flagging it', () => {
+    const { table, anomalies } = tableFromKeyedRows(['Bill No', 'KOT NO'], [{ 'Bill No': '', 'KOT NO': '7' }]);
+    expect(table.rows).toEqual([['', '7']]);
+    expect(anomalies).toBe(0);
   });
-  it('handles an empty table', () => {
-    expect(normaliseExtractedTable({ columns: [], rows: [] })).toEqual({ columns: [], rows: [] });
+  it('flags unknown keys and ignores their values', () => {
+    const { table, anomalies } = tableFromKeyedRows(['a'], [{ a: '1', b: '2' }]);
+    expect(table.rows).toEqual([['1']]);
+    expect(anomalies).toBe(1);
+  });
+  it('collapses stray spacing in headers and still matches the row keys', () => {
+    const { table, anomalies } = tableFromKeyedRows(['TABLE  NO.', 'Q T Y'], [{ 'TABLE  NO.': 'L-6', 'Q T Y': '2' }]);
+    expect(table).toEqual({ columns: ['TABLE NO.', 'Q T Y'], rows: [['L-6', '2']] });
+    expect(anomalies).toBe(0);
+  });
+  it('turns null/numbers into text and handles an empty table', () => {
+    expect(tableFromKeyedRows(['a', 'b'], [{ a: null, b: 5 }]).table.rows).toEqual([['', '5']]);
+    expect(tableFromKeyedRows([], [])).toEqual({ table: { columns: [], rows: [] }, anomalies: 0 });
   });
 });

@@ -11,10 +11,12 @@ a blank Bill No made it invent a value. Registers differ by outlet and POS and w
 ## Decision
 The recipe (`lib/ai/evidenceRecipes.ts`) is now a hint only — `typicalColumns` plus a description, used so
 the model knows what it is looking at. The extracted table's `columns` are the photo's own printed headers
-(verbatim, in order; extra, missing, renamed or reordered columns are all fine) and every row has one cell
-per header, blanks as `""` in place. `normaliseExtractedTable` (`lib/evidence/normaliseTable.ts`) enforces
-row width before storage (pads short rows, folds extra cells into the last, never changes a value), and both
-table renderers draw by header position. The storage shape `{ columns, rows }` is unchanged.
+(verbatim, in order; extra, missing, renamed or reordered columns are all fine). The model returns each row
+as an object keyed by those headers, so a dropped cell is a blank in its own place and can never shift the
+cells after it; `tableFromKeyedRows` (`lib/evidence/normaliseTable.ts`) converts that to the stored positional
+`{ columns, rows }` and counts malformed rows (missing/unknown keys), which trigger one retry and then a
+console warning. Both table renderers draw by header position. The vision model is now `gpt-5-mini`
+(`reasoning_effort: 'low'`, no `temperature`) for cost; verify its output on real register photos.
 
 ## Consequences
 Any column set works with no code change. Headers are no longer identical across outlets, so Stage B

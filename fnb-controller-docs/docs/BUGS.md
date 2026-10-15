@@ -952,13 +952,16 @@ Repro:      Item-cancellation register photo with a KOT NO column (between Bill 
 Root cause: The fixed recipe (ADR-0012) had 14 columns and the prompt demanded exactly 14 cells per row, but the
             photo had 15. With no slot for KOT NO the model absorbed it into the next column. The renderers also
             looped over each row's own cells, so any row of a different length misaligned against the header.
-Fix:        ADR-0020 — recipe is a hint only; the model returns the photo's own headers with one cell per header
-            (blanks as "" in place); `normaliseExtractedTable` fixes row width before storage; both renderers
-            draw by header position.
-Guard:      lib/evidence/normaliseTable.test.ts — short rows are padded (blanks never shift later cells), extra
-            cells are folded not dropped, arbitrary columns pass through unchanged.
+Fix:        ADR-0020 — recipe is a hint only; the model returns the photo's own headers and each row as an
+            object keyed by header (a dropped cell is a blank, never a shift); `tableFromKeyedRows` converts to
+            positional rows and counts malformed rows (one retry, then a warning); both renderers draw by
+            header position. A first version padded short positional rows, which hid a dropped Waiter cell
+            as a trailing blank — replaced by keyed rows.
+Guard:      lib/evidence/normaliseTable.test.ts — a dropped cell stays a blank in its own place and is flagged,
+            arbitrary columns pass through unchanged, genuinely blank cells are not flagged.
 Related:    ADR-0012, ADR-0020, ADR-0018
 
 History:
 - 2026-10-15  opened (user reported shifted columns on item cancellation register)
 - 2026-10-15  fixed + guard added
+- 2026-10-15  regressed on the last row of a 28-row register (dropped cell, padded as blank); reworked to keyed rows

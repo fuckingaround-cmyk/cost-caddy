@@ -42,14 +42,18 @@ That list is only a hint for what you are looking at. The photo's own header row
 
 Transcribe the table exactly as it appears. Take the column headers verbatim from the photo, left to
 right, one entry per printed column — include columns that are not in the typical list (e.g. "KOT NO"),
-keep the photo's own order and spelling, and do not add, drop, merge, rename or reorder columns. If the
-photo has no header row, use short descriptive headers for the columns you can see.
+keep the photo's own order and spelling, and do not add, drop, merge, rename or reorder columns. A header
+that wraps over several lines in its cell is ONE header: join it into a single clean string (a header printed
+as "BIL / L / NO." is "BILL NO."; "Q / T / Y" is "QTY"). If the photo has no header row, use short
+descriptive headers for the columns you can see.
 
 Work strictly row by row, top to bottom, and transcribe every row — do not skip, merge, reorder or
 repeat rows, and never copy a value from one row into another. Every row array must have exactly one
-entry per header, in the same left-to-right positions. A blank, empty or illegible cell is an empty
-string "" that still occupies its position — never shift the cells after it to the left, and never
-fill a blank with a value from a neighbouring cell or a guess.
+entry per header, in the same left-to-right positions. Values that repeat down a column (the same
+name, reason, signature or remark on many rows) are still printed in every row: read and transcribe each one,
+never leave it blank because it looks the same as the row above. Use "" ONLY for a cell that is visibly empty
+in the photo (or truly unreadable) — check every cell of every row before leaving one empty — and never fill
+a blank with a value from a neighbouring cell or a guess.
 
 Never sum, average, round, reformat a date, recompute a percentage, or infer a value that isn't legible.
 If the photo has no row/column structure at all (not actually a table), return zero rows for it.

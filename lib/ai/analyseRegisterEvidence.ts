@@ -8,16 +8,20 @@ import type { EvidencePhotoType } from '@/lib/evidence/types';
 import { evidenceTranscriptionRules } from './evidenceRecipes';
 import { EVIDENCE_FINDINGS_POLICY_CONTEXT } from './evidenceFindingsPolicyContext';
 import { REGISTER_FINDINGS_RULES, generateRegisterFindingsForItem } from './generateRegisterFindings';
-import { normaliseExtractedTable } from '@/lib/evidence/normaliseTable';
+import { tableFromKeyedRows } from '@/lib/evidence/normaliseTable';
+import type { ExtractedTableShape } from '@/lib/evidence/normaliseTable';
 import { withTimeout } from './withTimeout';
 
-const TableSchema = z.object({ columns: z.array(z.string()), rows: z.array(z.array(z.string())) });
-export type ExtractedTable = z.infer<typeof TableSchema>;
+// The model returns each row as an object keyed by the photo's own headers (ADR-0020) so a
+// dropped cell can't shift its neighbours; tableFromKeyedRows turns that into positional rows.
+const TableSchema = z.object({ columns: z.array(z.string()), rows: z.array(z.record(z.string(), z.unknown())) });
+export type ExtractedTable = ExtractedTableShape;
 const ResultSchema = z.object({ tables: z.array(TableSchema), findings: z.string(), correctiveMeasures: z.string() });
 
 const ANALYSE_TIMEOUT_MS = 90_000;
-// gpt-4o-mini fabricated/blended rows on dense registers (see ADR-0014 addendum).
-const OPENAI_VISION_MODEL = 'gpt-4o';
+// gpt-4o-mini fabricated/blended rows on dense registers (see ADR-0014 addendum). gpt-5-mini is
+// the low-cost reasoning model; its output is verified against real register photos (ADR-0020).
+const OPENAI_VISION_MODEL = 'gpt-5-mini';
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 
 function mimeTypeFor(filename: string): string {
@@ -45,9 +49,11 @@ ${EVIDENCE_FINDINGS_POLICY_CONTEXT}
 ${REGISTER_FINDINGS_RULES}
 
 Respond with a single JSON object of the exact shape:
-{"tables": [{"columns": ["<header 1 as printed>", "<header 2 as printed>", ...], "rows": [["...", "..."], ...]}, ...], "findings": "...", "correctiveMeasures": "..."}
+{"tables": [{"columns": ["<header 1 as printed>", "<header 2 as printed>", ...], "rows": [{"<header 1>": "<cell>", "<header 2>": "<cell>", ...}, ...]}, ...], "findings": "...", "correctiveMeasures": "..."}
 "tables" must have exactly ${photoCount} entries, one per photo, in the order the photos are given.
-Each table's "columns" are that photo's own printed headers, and every row has exactly as many entries as "columns".
+Each table's "columns" are that photo's own printed headers (if two headers repeat, add " 2" to the later one so
+every header is unique). Each row is an OBJECT keyed by those exact header strings, with a key for EVERY header —
+use "" for a blank or illegible cell, so a blank never moves another cell.
 `.trim();
 }
 
@@ -65,7 +71,7 @@ async function callOpenAI(
     body: JSON.stringify({
       model: OPENAI_VISION_MODEL,
       response_format: { type: 'json_object' },
-      temperature: 0,
+      reasoning_effort: 'medium',
       messages: [
         { role: 'system', content: systemPrompt(type, photos.length) },
         {
@@ -88,7 +94,26 @@ async function callOpenAI(
   if (process.env.NODE_ENV !== 'production') console.log('[analyseRegisterEvidence] raw model output:', content);
   const parsed = ResultSchema.parse(JSON.parse(content));
   if (parsed.tables.length !== photos.length) throw new Error('OpenAI returned the wrong number of tables');
-  return parsed;
+  const built = parsed.tables.map((t) => tableFromKeyedRows(t.columns, t.rows));
+  return {
+    tables: built.map((b) => b.table),
+    anomalies: built.reduce((n, b) => n + b.anomalies, 0),
+    findings: parsed.findings,
+    correctiveMeasures: parsed.correctiveMeasures,
+  };
+}
+
+// A row that didn't carry exactly one value per header is a sign the model slipped on this photo.
+// Retry once (the only extra cost, and only when it happens); if it persists keep the result — the
+// keyed shape already puts every value under its own header — and log it for the admin to check.
+async function callOpenAIChecked(...args: Parameters<typeof callOpenAI>) {
+  let result = await callOpenAI(...args);
+  if (result.anomalies > 0) {
+    console.warn(`[analyseRegisterEvidence] ${result.anomalies} malformed row(s); retrying once`);
+    result = await callOpenAI(...args);
+    if (result.anomalies > 0) console.warn(`[analyseRegisterEvidence] ${result.anomalies} malformed row(s) remain after retry — admin should check the table`);
+  }
+  return result;
 }
 
 // ADR-0018 (supersedes ADR-0012/0015's two-step flow) — ONE vision call per POS report:
@@ -134,7 +159,7 @@ export async function analyseRegisterItem(itemId: string, opts: { keepExistingFi
   try {
     const photos = await Promise.all(files.map(async (f) => ({ bytes: await downloadFile(f.storagePath), mimeType: mimeTypeFor(f.name) })));
     result = await withTimeout(
-      callOpenAI(item.reportType, { report: item.label, status: item.status, auditorRemark: item.remark }, photos),
+      callOpenAIChecked(item.reportType, { report: item.label, status: item.status, auditorRemark: item.remark }, photos),
       ANALYSE_TIMEOUT_MS,
     );
   } catch (e) {
@@ -146,7 +171,7 @@ export async function analyseRegisterItem(itemId: string, opts: { keepExistingFi
   for (const [i, f] of files.entries()) {
     await db
       .update(auditItemFiles)
-      .set({ extractionStatus: 'extracted', extractedTable: normaliseExtractedTable(result.tables[i]), extractionModel: OPENAI_VISION_MODEL, extractedAt: now })
+      .set({ extractionStatus: 'extracted', extractedTable: result.tables[i], extractionModel: OPENAI_VISION_MODEL, extractedAt: now })
       .where(eq(auditItemFiles.id, f.id));
   }
 
