@@ -312,8 +312,8 @@ function ChecklistItemRow({
                 color: item.naReason ? 'var(--ink)' : 'var(--placeholder)',
               }}
             >
-              <option value="" disabled={!item.freeform}>
-                {item.freeform ? 'Reason (optional)…' : 'Reason N/A applies…'}
+              <option value="">
+                Reason (optional)…
               </option>
               {NA_REASONS.map((r) => (
                 <option key={r} value={r}>
@@ -336,7 +336,7 @@ function ChecklistItemRow({
                   onAddPhotos(files);
                 }
               }}
-              placeholder={item.status === 'pass' || item.freeform ? 'Add a remark (optional)…' : 'Add a remark…'}
+              placeholder={item.status !== 'fail' ? 'Add a remark (optional)…' : 'Add a remark…'}
               rows={2}
               style={{
                 padding: 10,

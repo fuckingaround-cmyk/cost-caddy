@@ -7,6 +7,7 @@ and DESIGN Part B). One dated line per shipped thing.
 
 ### 2026-10-15
 - Changed: the auditor's "Other Observations" point is an optional catch-all — it can stay pending and needs no N/A reason or remark to submit (UX-031).
+- Changed: marking any checklist point N/A no longer requires a reason or remark (UX-031).
 
 ### 2026-10-14
 - Fixed: cost rows in the template builder now have a "Costed against" choice, so Liquor Cost can be costed against Liquor Sale alone instead of all bar sales (BUG-029).

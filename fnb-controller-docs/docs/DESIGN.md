@@ -537,3 +537,5 @@ APC is the term the clients use. **Trade-off:** supersedes the v4 design's six-c
 ### UX-032 — POS Report section accepts any report (client feedback, 2026-10-15)
 **Decision:** the template builder's POS Report dropdown offers the four presets (once each) plus "Other (custom name)…", which reveals a text box; Add (or Enter) appends it. Duplicate names (case-insensitive) are ignored. The dropdown never disables.
 **Why:** the fixed list emptied out as presets were added and blocked reports an outlet's POS actually produces (void, settlement…). **Trade-off:** custom reports use the generic "other register" extraction prompt, not a tuned recipe.
+
+**Update 2026-10-15:** N/A is now optional on every point — no reason, no remark; only Fail still needs a remark. Supersedes UX-009/R10's N/A reason requirement.
