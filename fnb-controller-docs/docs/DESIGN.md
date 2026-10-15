@@ -529,3 +529,7 @@ Total Pax (Covers) first, then Gross Sale, Total Discount and Net Sale (Ex-Tax);
 **Why:** the template is an internal setup detail clients don't recognise; a period is what was audited, not one day;
 APC is the term the clients use. **Trade-off:** supersedes the v4 design's six-card strip and "Per Pax" label.
 
+
+### UX-031 — Other Observations is an optional catch-all (client feedback, 2026-10-15)
+**Decision:** a `freeform` checklist point ("Other Observations - <dept>") always counts as answered — it may stay pending, and if the auditor does mark it N/A the reason is optional, as is the remark. The same `isItemAnswered` check runs client-side and in `submitAudit`. Pass already needed no remark; unchanged.
+**Why:** it is a catch-all for anything not covered; forcing a status, reason or remark made auditors invent filler to submit. **Trade-off:** supersedes UX-009/R10's remark/reason requirement for freeform points only.
