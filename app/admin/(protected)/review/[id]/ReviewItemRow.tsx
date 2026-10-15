@@ -173,8 +173,8 @@ export function ReviewItemRow({ item, auditId }: { item: ReviewItem; auditId: st
               onChange={(e) => setNaReason(e.target.value)}
               style={{ padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-control)', fontSize: 13 }}
             >
-              <option value="" disabled>
-                Reason N/A applies…
+              <option value="">
+                Reason (optional)…
               </option>
               {NA_REASONS.map((r) => (
                 <option key={r} value={r}>
