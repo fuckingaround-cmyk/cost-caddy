@@ -19,3 +19,15 @@ describe('POS report types', () => {
     expect(isPosReportType('nonsense')).toBe(false);
   });
 });
+
+describe('custom POS reports', () => {
+  it('maps presets to their label and custom names to type other', async () => {
+    const { posReportEntryFor, posFindingsKey } = await import('./types');
+    expect(posReportEntryFor('discount_register', 'ignored')).toEqual({ reportType: 'discount_register', label: 'Discount' });
+    expect(posReportEntryFor('other', '  Void report ')).toEqual({ reportType: 'other', label: 'Void report' });
+    expect(posReportEntryFor('other', '   ')).toBeNull();
+    expect(posReportEntryFor('voids_cancellations', 'x')).toBeNull();
+    expect(posFindingsKey('other', 'Void report')).toBe('Void report');
+    expect(posFindingsKey('discount_register', 'Discount')).toBe('');
+  });
+});

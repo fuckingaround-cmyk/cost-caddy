@@ -142,7 +142,7 @@ export async function submitAudit(auditId: string): Promise<void> {
       .from(auditMetricValues)
       .where(eq(auditMetricValues.auditId, auditId)),
     db
-      .select({ status: auditItems.status, remark: auditItems.remark, naReason: auditItems.naReason })
+      .select({ status: auditItems.status, remark: auditItems.remark, naReason: auditItems.naReason, freeform: auditItems.freeform })
       .from(auditItems)
       .where(eq(auditItems.auditId, auditId)),
   ]);

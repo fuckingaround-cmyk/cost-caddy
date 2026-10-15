@@ -921,3 +921,24 @@ History:
 - 2026-09-27  opened (user reported being unable to paste/attach an image in the remarks section)
 - 2026-09-27  fixed + guard added
 
+## BUG-029 — Liquor Cost % divided by all bar sales (liquor + beverage), no way to pick its denominator
+Status: fixed · Area: app/admin/(protected)/templates/TemplateBuilder, lib/templates/metricCats, lib/calc/sections
+
+Repro:      Liquor Sale 502,278, Beverage Sale 186,853, Liquor Cost 797,132: the audit's Costing section
+            showed 115.67% (797,132 / 689,131) instead of 158.70% (797,132 / 502,278).
+Root cause: `toMetricInput` saved every cost row with its category's fixed `defaultDen` ('bar' for Bar
+            Cost), and the builder had no control to choose another denominator — although the design spec
+            has denominator pills and `metricDen` already supports a specific sales metric's id. So Liquor
+            Cost was always costed against barSale (all revGroup:'bar' sales).
+Fix:        Added a "Costed against" select to cost-category rows in TemplateBuilder (All net / bar / food
+            sales, or any sales metric), carried through `toMetricInput` (row den wins; category default
+            when unset or when the chosen sales metric was deleted).
+            Existing templates/audits are not changed: re-save the template with Liquor Cost set to Liquor
+            Sale; in-flight audits keep their frozen snapshot until re-assigned.
+Guard:      lib/templates/metricCats.test.ts — a bar-cost row with den 'm_liquor' saves den 'm_liquor'; one
+            without saves the 'bar' default.
+Related:    BUG-020, BUG-021 (same pattern: builder forced a category default), lib/calc/metrics.ts metricDen
+
+History:
+- 2026-10-14  opened (user reported 115.67% where 158.70% expected)
+- 2026-10-14  fixed + guard added

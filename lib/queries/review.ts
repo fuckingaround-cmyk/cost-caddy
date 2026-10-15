@@ -81,6 +81,7 @@ export async function listOperationalFiles(auditId: string): Promise<Operational
 
 export type EvidenceFindingsRow = {
   evidenceType: EvidencePhotoType;
+  reportLabel: string;
   findings: string;
   correctiveMeasures: string;
   aiPolishedAt: Date | null;
@@ -91,6 +92,7 @@ export async function getEvidenceFindings(auditId: string): Promise<EvidenceFind
   return db
     .select({
       evidenceType: auditEvidenceFindings.evidenceType,
+      reportLabel: auditEvidenceFindings.reportLabel,
       findings: auditEvidenceFindings.findings,
       correctiveMeasures: auditEvidenceFindings.correctiveMeasures,
       aiPolishedAt: auditEvidenceFindings.aiPolishedAt,

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { posFindingsKey } from '@/lib/evidence/types';
 import { notFound, redirect } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
 import { getAuditForReview, getEvidenceFindings, listOperationalFiles, type ReviewAuditDetail } from '@/lib/queries/review';
@@ -43,7 +44,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
     getEvidenceFindings(id),
   ]);
 
-  const findingsByType = new Map(evidenceFindings.map((f) => [f.evidenceType, f]));
+  const findingsByType = new Map(evidenceFindings.map((f) => [`${f.evidenceType}|${f.reportLabel}`, f]));
 
   const sections = defs.length > 0 ? metricSections(defs, values) : [];
 
@@ -75,8 +76,9 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
           it.section === 'pos_report' && it.reportType
             ? {
                 evidenceType: it.reportType,
-                findings: findingsByType.get(it.reportType)?.findings ?? '',
-                correctiveMeasures: findingsByType.get(it.reportType)?.correctiveMeasures ?? '',
+                reportLabel: posFindingsKey(it.reportType, it.label),
+                findings: findingsByType.get(`${it.reportType}|${posFindingsKey(it.reportType, it.label)}`)?.findings ?? '',
+                correctiveMeasures: findingsByType.get(`${it.reportType}|${posFindingsKey(it.reportType, it.label)}`)?.correctiveMeasures ?? '',
               }
             : null,
         photos,

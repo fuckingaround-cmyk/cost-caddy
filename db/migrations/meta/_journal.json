@@ -92,6 +92,13 @@
       "when": 1790585678647,
       "tag": "0012_template_archive",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791991557727,
+      "tag": "0013_custom_pos_reports",
+      "breakpoints": true
     }
   ]
 }

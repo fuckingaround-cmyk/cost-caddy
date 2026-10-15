@@ -99,7 +99,9 @@ export const METRIC_CATS: MetricCat[] = [
 //   revGroup:'kitchen' (no builder UI ever emitted 'bar'), so Bar Sale (and the report's
 //   Bar revenue-matrix row) was always null/"Needs data" — every sales metric, Beverage
 //   and Liquor included, was summed into kitchenSale instead.
-// The row's own selection wins for both.
+// The row's own selection wins for both. A cost row's `den` (its % denominator) also wins
+// over the category default — before this, every Bar Cost row was forced to 'bar', so Liquor
+// Cost was divided by liquor + beverage sale instead of liquor sale alone.
 export function toMetricInput(
   m: {
     key: string;
@@ -108,6 +110,7 @@ export function toMetricInput(
     catKey: MetricCatKey;
     kind: 'tax' | 'charge';
     revGroup: 'kitchen' | 'bar';
+    den?: string;
   },
 ): TemplateMetricInput {
   const cat = METRIC_CATS.find((c) => c.key === m.catKey)!;
@@ -118,7 +121,7 @@ export function toMetricInput(
     revGroup: cat.key === 'sales' ? m.revGroup : (cat.fields.revGroup ?? null),
     kind: cat.key === 'taxes' ? m.kind : (cat.fields.kind ?? null),
     costGroup: cat.fields.costGroup ?? null,
-    den: cat.hasDen ? (cat.defaultDen ?? null) : null,
+    den: cat.hasDen ? (m.den || cat.defaultDen || null) : null,
     unit: m.unit,
   };
 }

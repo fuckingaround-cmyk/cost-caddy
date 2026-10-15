@@ -16,7 +16,7 @@ import {
 } from '@/db/schema';
 import { requireRole } from '@/lib/auth';
 import { deleteStoredFiles, removeAuditsInTx } from '@/lib/audits/removeAudits';
-import { POS_REPORT_LABELS, type PosReportType } from '@/lib/evidence/types';
+import { POS_REPORT_LABELS, isPosReportType } from '@/lib/evidence/types';
 
 export type CreateAuditState = { error?: string; created?: boolean };
 
@@ -124,7 +124,7 @@ export async function createAudit(
           code: `RPT-${String(i + 1).padStart(2, '0')}`,
           cat: 'POS Report',
           catCode: 'RPT',
-          label: POS_REPORT_LABELS[r.reportType as PosReportType],
+          label: r.label || (isPosReportType(r.reportType) ? POS_REPORT_LABELS[r.reportType] : 'Report'),
           section: 'pos_report' as const,
           reportType: r.reportType,
           sortOrder: sortOrder++,

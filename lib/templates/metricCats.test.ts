@@ -38,4 +38,10 @@ describe('toMetricInput', () => {
     expect(input.kind).toBeNull();
     expect(input.revGroup).toBeNull();
   });
+
+  it('keeps a bar-cost row\'s chosen denominator instead of forcing the category default', () => {
+    const base = { key: 'm_cliq', label: 'Liquor Cost', unit: 'currency' as const, catKey: 'barCost' as const, kind: 'tax' as const, revGroup: 'kitchen' as const };
+    expect(toMetricInput({ ...base, den: 'm_liquor' }).den).toBe('m_liquor');
+    expect(toMetricInput(base).den).toBe('bar');
+  });
 });

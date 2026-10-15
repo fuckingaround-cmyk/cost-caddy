@@ -6,7 +6,7 @@ import { saveTemplate } from '@/lib/actions/templates';
 import { builderCatCode, checklistPointCode } from '@/lib/templates/builderCode';
 import { METRIC_CATS, UNIT_OPTIONS, toMetricInput, type MetricCatKey } from '@/lib/templates/metricCats';
 import type { TemplateDetail } from '@/lib/queries/templates';
-import { POS_REPORT_LABELS, POS_REPORT_TYPES, type PosReportType } from '@/lib/evidence/types';
+import { POS_REPORT_LABELS, POS_REPORT_TYPES, type PosReportEntry } from '@/lib/evidence/types';
 import { Button } from '@/components/ui/Button';
 import { CategoryIcon, CheckIcon, CirclePlusIcon, DepartmentIcon, PlusIcon, TrashIcon } from './icons';
 
@@ -23,6 +23,7 @@ type BuilderMetric = {
   catKey: MetricCatKey;
   kind: 'tax' | 'charge';
   revGroup: 'kitchen' | 'bar';
+  den: string;
 };
 
 type BuilderPoint = { id: string; label: string; guidance: string; freeform: boolean };
@@ -48,6 +49,7 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
       catKey: catForMetric(m),
       kind: m.kind === 'charge' ? 'charge' : 'tax',
       revGroup: m.revGroup === 'bar' ? 'bar' : 'kitchen',
+      den: m.den ?? '',
     })),
   );
   const [departments, setDepartments] = useState<BuilderDept[]>(
@@ -60,14 +62,15 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
         }))
       : [{ cid: newId('c'), cat: 'New Category 1', code: 'NC', points: [] }],
   );
-  const [posReports, setPosReports] = useState<PosReportType[]>(initial.posReports);
-  const [posPick, setPosPick] = useState<PosReportType | ''>('');
+  const [posReports, setPosReports] = useState<PosReportEntry[]>(initial.posReports);
+  const [posPick, setPosPick] = useState('');
+  const [posCustom, setPosCustom] = useState('');
   const [openCids, setOpenCids] = useState<string[] | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const addMetric = (catKey: MetricCatKey) => {
-    setMetrics((ms) => [...ms, { key: newId('m'), label: '', unit: 'currency', catKey, kind: 'tax', revGroup: 'kitchen' }]);
+    setMetrics((ms) => [...ms, { key: newId('m'), label: '', unit: 'currency', catKey, kind: 'tax', revGroup: 'kitchen', den: '' }]);
   };
   const updateMetric = (key: string, patch: Partial<BuilderMetric>) =>
     setMetrics((ms) => ms.map((m) => (m.key === key ? { ...m, ...patch } : m)));
@@ -101,15 +104,31 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
   const removePoint = (cid: string, pid: string) =>
     setDepartments((ds) => ds.map((d) => (d.cid === cid ? { ...d, points: d.points.filter((p) => p.id !== pid) } : d)));
 
+  const denChoices = [
+    { value: 'net', label: 'All net sales' },
+    { value: 'bar', label: 'All bar sales' },
+    { value: 'kitchen', label: 'All food sales' },
+    ...metrics.filter((m) => m.catKey === 'sales' && m.label.trim()).map((m) => ({ value: m.key, label: m.label })),
+  ];
+
   const totalPoints = departments.reduce((n, d) => n + d.points.length, 0);
 
-  const availablePosTypes = POS_REPORT_TYPES.filter((t) => !posReports.includes(t));
+  const CUSTOM = '__custom';
+  const hasPosReport = (r: PosReportEntry) => posReports.some((x) => x.reportType === r.reportType && x.label.toLowerCase() === r.label.toLowerCase());
+  const availablePosTypes = POS_REPORT_TYPES.filter((t) => !posReports.some((r) => r.reportType === t));
+  const customName = posCustom.trim();
+  const canAddPos = posPick === CUSTOM ? customName !== '' : posPick !== '';
   const addPosReport = () => {
-    if (!posPick) return;
-    setPosReports((rs) => [...rs, posPick]);
+    if (!canAddPos) return;
+    const entry: PosReportEntry =
+      posPick === CUSTOM
+        ? { reportType: 'other', label: customName }
+        : { reportType: posPick as PosReportEntry['reportType'], label: POS_REPORT_LABELS[posPick as keyof typeof POS_REPORT_LABELS] };
+    if (!hasPosReport(entry)) setPosReports((rs) => [...rs, entry]);
     setPosPick('');
+    setPosCustom('');
   };
-  const removePosReport = (t: PosReportType) => setPosReports((rs) => rs.filter((r) => r !== t));
+  const removePosReport = (r: PosReportEntry) => setPosReports((rs) => rs.filter((x) => x !== r));
 
   const onSave = () => {
     setSaveError(null);
@@ -129,7 +148,8 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
         name,
         metrics: metrics
           .filter((m) => m.label.trim())
-          .map(toMetricInput),
+          // A den pointing at a deleted/unlabelled sales metric falls back to the category default.
+          .map((m) => toMetricInput(m.den && !denChoices.some((c) => c.value === m.den) ? { ...m, den: '' } : m)),
         departments: departments
           .filter((d) => d.cat.trim())
           .map((d) => ({
@@ -238,6 +258,22 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
                           <TrashIcon />
                         </button>
                       </div>
+                      {cat.hasDen && (
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 2, fontSize: 12, color: 'var(--ink-2)' }}>
+                          Costed against
+                          <select
+                            value={m.den || cat.defaultDen}
+                            onChange={(e) => updateMetric(m.key, { den: e.target.value })}
+                            style={{ padding: '6px 10px', border: '1px solid var(--border-dashed)', borderRadius: 'var(--radius-card)', fontSize: 12, background: 'var(--surface)' }}
+                          >
+                            {denChoices.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
                       {cat.key === 'taxes' && (
                         <div style={{ display: 'flex', gap: 14, paddingLeft: 2 }}>
                           {(['tax', 'charge'] as const).map((k) => (
@@ -402,31 +438,47 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', background: 'var(--surface-alt-1)', borderBottom: posReports.length > 0 ? '1px solid var(--border-dashed)' : 'none' }}>
             <select
               value={posPick}
-              onChange={(e) => setPosPick(e.target.value as PosReportType | '')}
-              disabled={availablePosTypes.length === 0}
+              onChange={(e) => setPosPick(e.target.value)}
               style={{ flex: 1, minWidth: 0, padding: '9px 10px', border: '1px solid var(--border-dashed)', borderRadius: 'var(--radius-card)', fontSize: 12.5, background: 'var(--surface)' }}
             >
-              <option value="">{availablePosTypes.length === 0 ? 'All report types added' : 'Select a report type…'}</option>
+              <option value="">Select a report type…</option>
               {availablePosTypes.map((t) => (
                 <option key={t} value={t}>
                   {POS_REPORT_LABELS[t]}
                 </option>
               ))}
+              <option value={CUSTOM}>Other (custom name)…</option>
             </select>
+            {posPick === CUSTOM && (
+              <input
+                value={posCustom}
+                onChange={(e) => setPosCustom(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addPosReport();
+                  }
+                }}
+                placeholder="Report name, e.g. Void report"
+                maxLength={80}
+                autoFocus
+                style={{ flex: 1, minWidth: 0, padding: '9px 10px', border: '1px solid var(--border-dashed)', borderRadius: 'var(--radius-card)', fontSize: 12.5, background: 'var(--surface)' }}
+              />
+            )}
             <button
               type="button"
               onClick={addPosReport}
-              disabled={!posPick}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: 'var(--navy-700)', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap', cursor: posPick ? 'pointer' : 'default', opacity: posPick ? 1 : 0.5 }}
+              disabled={!canAddPos}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: 'var(--navy-700)', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap', cursor: canAddPos ? 'pointer' : 'default', opacity: canAddPos ? 1 : 0.5 }}
             >
               <PlusIcon />
               Add Report
             </button>
           </div>
-          {posReports.map((t) => (
-            <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 18px', borderBottom: '1px solid var(--surface-alt-1)' }}>
-              <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--navy-900)' }}>{POS_REPORT_LABELS[t]}</div>
-              <button type="button" onClick={() => removePosReport(t)} title="Remove report" style={{ border: 'none', background: 'transparent', padding: 5, display: 'flex', cursor: 'pointer' }}>
+          {posReports.map((r) => (
+            <div key={`${r.reportType}|${r.label}`} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 18px', borderBottom: '1px solid var(--surface-alt-1)' }}>
+              <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--navy-900)' }}>{r.label}</div>
+              <button type="button" onClick={() => removePosReport(r)} title="Remove report" style={{ border: 'none', background: 'transparent', padding: 5, display: 'flex', cursor: 'pointer' }}>
                 <TrashIcon />
               </button>
             </div>

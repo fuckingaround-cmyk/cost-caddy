@@ -1,4 +1,5 @@
 import { getAuditForReview, getEvidenceFindings, listOperationalFiles, type ReviewAuditDetail } from '@/lib/queries/review';
+import { posFindingsKey } from '@/lib/evidence/types';
 import { getAuditItemFiles, getAuditItems, getAuditMetricDefs, getAuditMetricValues } from '@/lib/queries/audits';
 import { createSignedUrl, REPORT_EVIDENCE_URL_TTL_SECONDS } from '@/lib/storage';
 import { buildFinancialReportDraft, type FinancialReportDraft } from './financialDraft';
@@ -52,7 +53,7 @@ export async function loadReportViewModel(orgId: string, auditId: string): Promi
     listOperationalFiles(auditId),
     getEvidenceFindings(auditId),
   ]);
-  const findingsByType = new Map(evidenceFindings.map((f) => [f.evidenceType, f]));
+  const findingsByType = new Map(evidenceFindings.map((f) => [`${f.evidenceType}|${f.reportLabel}`, f]));
 
   const draft = buildFinancialReportDraft(
     defs,
@@ -103,7 +104,7 @@ export async function loadReportViewModel(orgId: string, auditId: string): Promi
   // ADR-0015 — POS report items become their own section (not compliance-matrix rows).
   const posReports: PosReport[] = [];
   for (const it of items.filter((i) => i.section === 'pos_report')) {
-    const written = it.reportType ? findingsByType.get(it.reportType) : undefined;
+    const written = it.reportType ? findingsByType.get(`${it.reportType}|${posFindingsKey(it.reportType, it.label)}`) : undefined;
     const tables: PosReportTable[] = [];
     for (const f of itemFiles.filter((x) => x.auditItemId === it.id && x.extractionStatus === 'extracted' && x.extractedTable)) {
       tables.push({

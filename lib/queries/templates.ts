@@ -8,7 +8,7 @@ import {
   templatePosReports,
   templates,
 } from '@/db/schema';
-import type { PosReportType } from '@/lib/evidence/types';
+import { POS_REPORT_LABELS, isPosReportType, type PosReportEntry } from '@/lib/evidence/types';
 
 export type TemplateRow = {
   id: string;
@@ -67,7 +67,7 @@ export type TemplateDetail = {
   name: string;
   metrics: TemplateMetricInput[];
   departments: TemplateDepartmentInput[];
-  posReports: PosReportType[];
+  posReports: PosReportEntry[];
 };
 
 export async function getTemplate(orgId: string, id: string): Promise<TemplateDetail | null> {
@@ -93,7 +93,7 @@ export async function getTemplate(orgId: string, id: string): Promise<TemplateDe
     .orderBy(asc(templateChecklistPoints.sortOrder));
 
   const posReports = await db
-    .select({ reportType: templatePosReports.reportType })
+    .select({ reportType: templatePosReports.reportType, label: templatePosReports.label })
     .from(templatePosReports)
     .where(eq(templatePosReports.templateId, id))
     .orderBy(asc(templatePosReports.sortOrder));
@@ -101,7 +101,10 @@ export async function getTemplate(orgId: string, id: string): Promise<TemplateDe
   return {
     id: t.id,
     name: t.name,
-    posReports: posReports.map((r) => r.reportType as PosReportType),
+    posReports: posReports.map((r) => ({
+      reportType: r.reportType as PosReportEntry['reportType'],
+      label: r.label || (isPosReportType(r.reportType) ? POS_REPORT_LABELS[r.reportType] : ''),
+    })),
     metrics: metrics.map((m) => ({
       metricKey: m.metricKey,
       label: m.label,

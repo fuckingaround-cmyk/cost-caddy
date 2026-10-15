@@ -12,6 +12,7 @@ export function EvidenceFindingsPanel({
   auditId,
   itemId,
   evidenceType,
+  reportLabel,
   label,
   findings: initialFindings,
   correctiveMeasures: initialCorrectiveMeasures,
@@ -19,6 +20,7 @@ export function EvidenceFindingsPanel({
   auditId: string;
   itemId: string;
   evidenceType: EvidencePhotoType;
+  reportLabel: string;
   label: string;
   findings: string;
   correctiveMeasures: string;
@@ -34,7 +36,7 @@ export function EvidenceFindingsPanel({
     setError(null);
     startTransition(async () => {
       try {
-        await updateEvidenceFindings(auditId, evidenceType, { findings, correctiveMeasures });
+        await updateEvidenceFindings(auditId, evidenceType, reportLabel, { findings, correctiveMeasures });
         setSavedAt(new Date());
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Could not save.');

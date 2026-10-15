@@ -66,7 +66,7 @@ export const templateDepartments = pgTable(
 );
 
 // POS Report section of a template (ADR-0015) — one row per report type the admin added
-// (Discount, Item Cancellation, Bill Modification, Complimentary), at most one of each.
+// (Discount, Item Cancellation, Bill Modification, Complimentary, or any custom-named report stored as 'other').
 export const templatePosReports = pgTable(
   'template_pos_reports',
   {
@@ -78,9 +78,11 @@ export const templatePosReports = pgTable(
       .notNull()
       .references(() => templates.id),
     reportType: evidencePhotoTypeEnum('report_type').notNull(),
+    // Display name; for the four presets it's the preset's label, for 'other' the admin's own.
+    label: text('label').notNull().default(''),
     sortOrder: integer('sort_order').notNull().default(0),
   },
-  (table) => [uniqueIndex('template_pos_reports_template_type_unique').on(table.templateId, table.reportType)],
+  (table) => [uniqueIndex('template_pos_reports_template_type_unique').on(table.templateId, table.reportType, table.label)],
 );
 
 // ChecklistPoint (ARCHITECTURE §5). `code` is the full reference code ('KIT-03').

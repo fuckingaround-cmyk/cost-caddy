@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { posFindingsKey } from '@/lib/evidence/types';
 import { and, eq, isNotNull } from 'drizzle-orm';
 import { db } from '@/db';
 import { auditEvidenceFindings, auditItemFiles, auditItems } from '@/db/schema';
@@ -94,6 +95,7 @@ export async function generateRegisterFindingsForItem(itemId: string): Promise<{
     );
   const tables = files.map((f) => f.extractedTable).filter((t): t is { columns: string[]; rows: string[][] } => t !== null);
 
+  const reportLabel = posFindingsKey(item.reportType, item.label);
   const generated = await withTimeout(
     callDeepSeek({ report: item.label, status: item.status, auditorRemark: item.remark, tables }),
     GENERATE_TIMEOUT_MS,
@@ -105,12 +107,13 @@ export async function generateRegisterFindingsForItem(itemId: string): Promise<{
       orgId: item.orgId,
       auditId: item.auditId,
       evidenceType: item.reportType,
+      reportLabel,
       findings: generated.findings,
       correctiveMeasures: generated.correctiveMeasures,
       aiPolishedAt: new Date(),
     })
     .onConflictDoUpdate({
-      target: [auditEvidenceFindings.auditId, auditEvidenceFindings.evidenceType],
+      target: [auditEvidenceFindings.auditId, auditEvidenceFindings.evidenceType, auditEvidenceFindings.reportLabel],
       set: {
         findings: generated.findings,
         correctiveMeasures: generated.correctiveMeasures,
@@ -128,21 +131,21 @@ export async function generateRegisterFindingsForItem(itemId: string): Promise<{
 export async function generateRegisterFindings(auditId: string, opts: { onlyMissing?: boolean } = {}): Promise<void> {
   try {
     const items = await db
-      .select({ id: auditItems.id, status: auditItems.status, reportType: auditItems.reportType })
+      .select({ id: auditItems.id, status: auditItems.status, reportType: auditItems.reportType, label: auditItems.label })
       .from(auditItems)
       .where(and(eq(auditItems.auditId, auditId), eq(auditItems.section, 'pos_report')));
 
     const existing = opts.onlyMissing
       ? await db
-          .select({ evidenceType: auditEvidenceFindings.evidenceType, findings: auditEvidenceFindings.findings })
+          .select({ evidenceType: auditEvidenceFindings.evidenceType, reportLabel: auditEvidenceFindings.reportLabel, findings: auditEvidenceFindings.findings })
           .from(auditEvidenceFindings)
           .where(eq(auditEvidenceFindings.auditId, auditId))
       : [];
-    const done = new Set(existing.filter((e) => e.findings.trim() !== '').map((e) => e.evidenceType));
+    const done = new Set(existing.filter((e) => e.findings.trim() !== '').map((e) => `${e.evidenceType}|${e.reportLabel}`));
 
     for (const it of items) {
       if (it.status === 'pending' || it.status === 'na' || !it.reportType) continue;
-      if (done.has(it.reportType)) continue;
+      if (done.has(`${it.reportType}|${posFindingsKey(it.reportType, it.label)}`)) continue;
       try {
         await generateRegisterFindingsForItem(it.id);
       } catch {

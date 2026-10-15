@@ -6,6 +6,8 @@ and DESIGN Part B). One dated line per shipped thing.
 ## Foundations — 2026
 
 ### 2026-10-14
+- Fixed: cost rows in the template builder now have a "Costed against" choice, so Liquor Cost can be costed against Liquor Sale alone instead of all bar sales (BUG-029).
+- Added: template builder's POS Report section accepts any report — the four presets or a custom-named one (stored as type "other" with its own name, one write-up per name); the dropdown no longer empties as presets are used (migration 0013).
 - Changed: report header now shows restaurant, city (no "Audit Report" prefix) and the audit period (start to end) instead of the template
   name and a single audit date, and the "Generated" date is removed; the Section 1 KPI strip keeps only Gross Sale, Total Pax, Total Discount and Net
   Sale; "Per Pax" is now "APC" (UX-030).

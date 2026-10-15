@@ -224,10 +224,12 @@ export const auditEvidenceFindings = pgTable(
       .notNull()
       .references(() => audits.id),
     evidenceType: evidencePhotoTypeEnum('evidence_type').notNull(),
+    // '' for the preset types; the report's name for custom ('other') reports.
+    reportLabel: text('report_label').notNull().default(''),
     findings: text('findings').notNull().default(''),
     correctiveMeasures: text('corrective_measures').notNull().default(''),
     aiPolishedAt: timestamp('ai_polished_at', { withTimezone: true }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [uniqueIndex('audit_evidence_findings_audit_type_unique').on(table.auditId, table.evidenceType)],
+  (table) => [uniqueIndex('audit_evidence_findings_audit_type_unique').on(table.auditId, table.evidenceType, table.reportLabel)],
 );

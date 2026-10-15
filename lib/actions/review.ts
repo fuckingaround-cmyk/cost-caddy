@@ -252,15 +252,16 @@ export async function retryEvidenceExtraction(fileId: string, auditId: string): 
 export async function updateEvidenceFindings(
   auditId: string,
   evidenceType: EvidencePhotoType,
+  reportLabel: string,
   fields: { findings: string; correctiveMeasures: string },
 ): Promise<void> {
   const { admin } = await requireReviewableAudit(auditId);
 
   await db
     .insert(auditEvidenceFindings)
-    .values({ orgId: admin.orgId, auditId, evidenceType, ...fields })
+    .values({ orgId: admin.orgId, auditId, evidenceType, reportLabel, ...fields })
     .onConflictDoUpdate({
-      target: [auditEvidenceFindings.auditId, auditEvidenceFindings.evidenceType],
+      target: [auditEvidenceFindings.auditId, auditEvidenceFindings.evidenceType, auditEvidenceFindings.reportLabel],
       set: { ...fields, updatedAt: new Date() },
     });
 

@@ -7,7 +7,6 @@ import { PhotoLightbox } from './PhotoLightbox';
 import { FindingPanel, type Finding } from './FindingPanel';
 import { EvidenceTablePanel } from './EvidenceTablePanel';
 import { EvidenceFindingsPanel } from './EvidenceFindingsPanel';
-import { EVIDENCE_PHOTO_TYPE_LABELS } from '@/lib/evidence/types';
 import type { EvidencePhotoType } from '@/lib/evidence/types';
 
 type ItemStatus = 'pending' | 'pass' | 'fail' | 'na';
@@ -45,7 +44,7 @@ export interface ReviewItem {
   remark: string;
   naReason: string | null;
   section: 'checklist' | 'pos_report';
-  register: { evidenceType: EvidencePhotoType; findings: string; correctiveMeasures: string } | null;
+  register: { evidenceType: EvidencePhotoType; reportLabel: string; findings: string; correctiveMeasures: string } | null;
   photos: ReviewPhoto[];
   finding: Finding | null;
 }
@@ -229,7 +228,8 @@ export function ReviewItemRow({ item, auditId }: { item: ReviewItem; auditId: st
           auditId={auditId}
           itemId={item.id}
           evidenceType={item.register.evidenceType}
-          label={EVIDENCE_PHOTO_TYPE_LABELS[item.register.evidenceType]}
+          reportLabel={item.register.reportLabel}
+          label={item.label}
           findings={item.register.findings}
           correctiveMeasures={item.register.correctiveMeasures}
         />

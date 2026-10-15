@@ -7,7 +7,7 @@ import { db } from '@/db';
 import { audits, templateChecklistPoints, templateDepartments, templateMetrics, templatePosReports, templates } from '@/db/schema';
 import { requireRole } from '@/lib/auth';
 import { builderCatCode, checklistPointCode } from '@/lib/templates/builderCode';
-import { isPosReportType, type PosReportType } from '@/lib/evidence/types';
+import { posReportEntryFor, type PosReportEntry } from '@/lib/evidence/types';
 import type { TemplateDepartmentInput, TemplateMetricInput } from '@/lib/queries/templates';
 
 export type SaveTemplateInput = {
@@ -15,7 +15,7 @@ export type SaveTemplateInput = {
   name: string;
   metrics: TemplateMetricInput[];
   departments: TemplateDepartmentInput[];
-  posReports: PosReportType[];
+  posReports: PosReportEntry[];
 };
 
 // A4: "Save Template" replaces the whole metric/department/checklist-point set in one
@@ -28,8 +28,15 @@ export async function saveTemplate(input: SaveTemplateInput): Promise<void> {
   const cleanDepartments = input.departments
     .map((d) => ({ ...d, code: d.code || builderCatCode(d.cat) }))
     .filter((d) => d.cat.trim());
-  // Re-validated server-side: only the four known report types, each at most once.
-  const cleanPosReports = [...new Set(input.posReports.filter((r) => isPosReportType(r)))];
+  // Re-validated server-side: a preset type or a named custom report, deduped by type + name.
+  const cleanPosReports = [
+    ...new Map(
+      input.posReports
+        .map((r) => posReportEntryFor(r.reportType, r.label))
+        .filter((r): r is PosReportEntry => r !== null)
+        .map((r) => [`${r.reportType}|${r.label.toLowerCase()}`, r] as const),
+    ).values(),
+  ];
 
   await db.transaction(async (tx) => {
     let tid = input.id;
@@ -88,7 +95,7 @@ export async function saveTemplate(input: SaveTemplateInput): Promise<void> {
 
     if (cleanPosReports.length > 0) {
       await tx.insert(templatePosReports).values(
-        cleanPosReports.map((reportType, i) => ({ orgId: admin.orgId, templateId: tid!, reportType, sortOrder: i })),
+        cleanPosReports.map((r, i) => ({ orgId: admin.orgId, templateId: tid!, reportType: r.reportType, label: r.label, sortOrder: i })),
       );
     }
 
