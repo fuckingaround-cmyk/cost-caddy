@@ -79,7 +79,9 @@ export async function loadReportViewModel(orgId: string, auditId: string): Promi
   const photosByItemId = new Map(itemPhotos);
 
   const departments: Department[] = [];
-  for (const it of items.filter((i) => i.section === 'checklist')) {
+  // Only failed checkpoints reach the report — Pass and N/A rows are dropped, so a
+  // department with no failures doesn't appear at all.
+  for (const it of items.filter((i) => i.section === 'checklist' && i.status === 'fail')) {
     let dept = departments.find((d) => d.cat === it.cat);
     if (!dept) {
       dept = { cat: it.cat, catCode: it.catCode, items: [] };
@@ -89,7 +91,8 @@ export async function loadReportViewModel(orgId: string, auditId: string): Promi
       id: it.id,
       refId: it.refId ?? it.code,
       label: it.label,
-      observation: it.status === 'na' ? (it.naReason ?? '') : it.remark,
+      // The auditor's raw wording never reaches the report — only the AI-polished rewrite.
+      observation: it.polished ? it.remark : '',
       status: it.status,
       category: it.category,
       severity: it.severity,

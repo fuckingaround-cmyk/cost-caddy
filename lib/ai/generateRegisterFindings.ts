@@ -9,16 +9,12 @@ import { withTimeout } from './withTimeout';
 const GeneratedSchema = z.object({ findings: z.string(), correctiveMeasures: z.string() });
 
 const GENERATE_TIMEOUT_MS = 45_000;
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
+const OPENAI_TEXT_MODEL = 'gpt-4o-mini';
 
-const SYSTEM_PROMPT = `
-You write the "Findings and Observations" and "Corrective Measures" for one POS register
-section (e.g. the discount register) of a client-facing restaurant audit report. You are given
-the field auditor's status and remark for that register and the table transcribed verbatim from
-the auditor's photo of it.
-
-${EVIDENCE_FINDINGS_POLICY_CONTEXT}
-
+// Shared with lib/ai/analyseRegisterEvidence.ts so the single vision call and the text-only
+// Regenerate write findings to the same standard.
+export const REGISTER_FINDINGS_RULES = `
 Rules:
 - Ground every statement in the auditor's remark and the table rows. Never invent a fact.
 - Be BRIEF: "findings" and "correctiveMeasures" must each be at most TWO short sentences (about
@@ -36,24 +32,35 @@ Rules:
   on patterns visible in the rows (e.g. a repeated approver, missing reasons) and a modest
   corrective measure. If the status is "pass", say no exception was noted unless the rows show
   otherwise, and keep the corrective measure to maintaining the current standard.
+`.trim();
+
+const SYSTEM_PROMPT = `
+You write the "Findings and Observations" and "Corrective Measures" for one POS register
+section (e.g. the discount register) of a client-facing restaurant audit report. You are given
+the field auditor's status and remark for that register and the table transcribed verbatim from
+the auditor's photo of it.
+
+${EVIDENCE_FINDINGS_POLICY_CONTEXT}
+
+${REGISTER_FINDINGS_RULES}
 
 Respond with a single JSON object of the exact shape: {"findings": "...", "correctiveMeasures": "..."}
 `.trim();
 
-async function callDeepSeek(payload: {
+async function callOpenAI(payload: {
   report: string;
   status: string;
   auditorRemark: string;
   tables: { columns: string[]; rows: string[][] }[];
 }) {
-  const res = await fetch(DEEPSEEK_API_URL, {
+  const res = await fetch(OPENAI_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: OPENAI_TEXT_MODEL,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -61,15 +68,15 @@ async function callDeepSeek(payload: {
       ],
     }),
   });
-  if (!res.ok) throw new Error(`DeepSeek request failed: ${res.status}`);
+  if (!res.ok) throw new Error(`OpenAI request failed: ${res.status}`);
   const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('DeepSeek response missing content');
+  if (!content) throw new Error('OpenAI response missing content');
   return GeneratedSchema.parse(JSON.parse(content));
 }
 
 // ADR-0015 — one POS report item's Findings + Corrective Measures, from the auditor's remark
-// and the table(s) extracted from its photo(s), via DeepSeek (text-only: the photo has already
+// and the table(s) extracted from its photo(s), via OpenAI (text-only: the photo has already
 // been transcribed, so every figure it can quote traces to a stored table cell). Throws on
 // failure — the admin "Regenerate" button surfaces it; the submit-time wrapper below swallows.
 export async function generateRegisterFindingsForItem(itemId: string): Promise<{ findings: string; correctiveMeasures: string }> {
@@ -97,7 +104,7 @@ export async function generateRegisterFindingsForItem(itemId: string): Promise<{
 
   const reportLabel = posFindingsKey(item.reportType, item.label);
   const generated = await withTimeout(
-    callDeepSeek({ report: item.label, status: item.status, auditorRemark: item.remark, tables }),
+    callOpenAI({ report: item.label, status: item.status, auditorRemark: item.remark, tables }),
     GENERATE_TIMEOUT_MS,
   );
 

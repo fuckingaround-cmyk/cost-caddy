@@ -10,8 +10,8 @@ import { deleteFile, operationalFilePath, uploadFile } from '@/lib/storage';
 import { parseOperationalFile } from '@/lib/operational/parseFile';
 import { NA_REASONS } from '@/lib/checklist/naReasons';
 import { classifyFinding, type Severity } from '@/lib/report/classify';
-import { extractEvidenceTable } from '@/lib/ai/extractEvidenceTable';
-import { generateRegisterFindings, generateRegisterFindingsForItem } from '@/lib/ai/generateRegisterFindings';
+import { analyseRegisterEvidence, analyseRegisterItem } from '@/lib/ai/analyseRegisterEvidence';
+import { generateRegisterFindingsForItem } from '@/lib/ai/generateRegisterFindings';
 import type { EvidencePhotoType } from '@/lib/evidence/types';
 
 async function requireReviewableAudit(auditId: string) {
@@ -154,7 +154,7 @@ export async function replaceOperationalFile(fileId: string, auditId: string, fo
   revalidatePath(`/admin/review/${auditId}`);
 }
 
-// C3 — every Fail becomes a finding. Since ADR-0011, DeepSeek already assigns findings
+// C3 — every Fail becomes a finding. Since ADR-0011, OpenAI already assigns findings
 // for most Fail items at submit time (lib/ai/scoreAuditRemarks.ts); this deterministic
 // classifier (EXECUTION.md C3, ported from Super Admin Flow.dc.html's
 // generateReport/enhanceAll ~line 1611/1842) is now the fallback for whatever that AI
@@ -198,7 +198,7 @@ export async function generateReport(auditId: string): Promise<void> {
 
   // Fallback for any POS register whose submit-time findings never landed (ADR-0015) —
   // only fills what's missing, so it never overwrites an AI-written or admin-edited block.
-  await generateRegisterFindings(auditId, { onlyMissing: true });
+  await analyseRegisterEvidence(auditId, { onlyMissing: true });
 
   revalidatePath(`/admin/review/${auditId}`);
 }
@@ -227,21 +227,23 @@ export async function updateFinding(
 async function requireOwnedEvidenceFile(fileId: string, auditId: string) {
   const { admin } = await requireReviewableAudit(auditId);
   const [file] = await db
-    .select({ id: auditItemFiles.id })
+    .select({ id: auditItemFiles.id, auditItemId: auditItemFiles.auditItemId })
     .from(auditItemFiles)
     .innerJoin(auditItems, eq(auditItems.id, auditItemFiles.auditItemId))
     .where(and(eq(auditItemFiles.id, fileId), eq(auditItems.auditId, auditId)))
     .limit(1);
   if (!file) throw new Error('Not found');
-  return { admin };
+  return { admin, auditItemId: file.auditItemId };
 }
 
-// Synchronous, unlike the fire-and-forget capture-time/submit-time triggers — the admin
+// Synchronous, unlike the fire-and-forget submit-time trigger — the admin
 // is waiting on this one.
 export async function retryEvidenceExtraction(fileId: string, auditId: string): Promise<void> {
-  await requireOwnedEvidenceFile(fileId, auditId);
+  const { auditItemId } = await requireOwnedEvidenceFile(fileId, auditId);
 
-  await extractEvidenceTable(fileId);
+  // ADR-0018 — re-reads every photo of that report in one call; findings an admin already
+  // wrote or edited are kept (use Regenerate on the findings to rewrite them).
+  await analyseRegisterItem(auditItemId, { keepExistingFindings: true });
 
   revalidatePath(`/admin/review/${auditId}`);
 }
@@ -268,7 +270,7 @@ export async function updateEvidenceFindings(
   revalidatePath(`/admin/review/${auditId}`);
 }
 
-// ADR-0015 — re-runs the submit-time DeepSeek job for one POS report (remark + extracted
+// ADR-0015 — re-runs the submit-time OpenAI job for one POS report (remark + extracted
 // table), overwriting its Findings/Corrective Measures. Synchronous: the admin is waiting.
 export async function regenerateRegisterFindings(
   auditId: string,

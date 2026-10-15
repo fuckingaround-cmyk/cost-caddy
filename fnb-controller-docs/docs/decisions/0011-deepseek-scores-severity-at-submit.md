@@ -1,6 +1,6 @@
 # ADR-0011 — DeepSeek scores severity at submit, alongside the remark polish
 
-Status: accepted · Date: 2026-09-26
+Status: accepted · Date: 2026-09-26 · provider superseded by ADR-0017; only Fail remarks are sent since ADR-0019
 
 ## Context
 ADR-0004/B6 gave the auditor's remark one AI pass at submit — Anthropic (`claude-opus-5`) rewrote non-pass

@@ -14,11 +14,11 @@ Next.js (App Router) + **TypeScript end-to-end** · PostgreSQL on **Supabase** �
 · **own-auth** (argon2 hashes, signed-cookie sessions; Lucia or Auth.js Credentials — not Supabase Auth)
 · **Supabase Storage** (photos, PDFs, uploads) · **Playwright** for PDF, **exceljs** for XLSX ·
 hosting on **Cloudflare/Vercel**. PWA is an installable shell only (Serwist/`next-pwa`), **no offline
-data layer**. **DeepSeek** (`deepseek-chat`, plain `fetch` — no SDK), lands early with **B6** (submit-time
-remark polish + severity scoring, ADR-0011, superseding ADR-0004's Anthropic-only prose polish) rather
-than waiting for Stage B. **OpenAI** (`gpt-4o-mini`, plain `fetch` — no SDK) lands alongside it with
-**B7** (evidence-photo table extraction — discount registers, void logs — ADR-0012/ADR-0014); an
-independent job, never sees remark text or financial figures. Stage B's LLM provider for analytics
+data layer**. **OpenAI** (plain `fetch` — no SDK; `gpt-4o-mini` for text jobs, `gpt-4o` for vision) is the only LLM
+provider (ADR-0017, superseding ADR-0011's DeepSeek choice). It lands early with **B6** (submit-time remark
+polish + severity scoring, ADR-0011, superseding ADR-0004's Anthropic-only prose polish) and **B7**
+(evidence-photo table extraction — discount registers, void logs — ADR-0012/ADR-0014); the register job
+never sees remark text or financial figures. Stage B's LLM provider for analytics
 narration is not yet decided (ADR-0011). Stage B adds SheetJS, Arquero, Graphile Worker/pg-boss, Recharts.
 Rationale in `docs/ARCHITECTURE.md` §2 and `docs/decisions/0001-typescript-end-to-end.md`.
 
@@ -79,7 +79,7 @@ No `test`, Drizzle `migrate`, or Playwright e2e script yet — those land with F
 - **Publish freezes; correction versions** — a correction is a new version with a note; with no audit trail, versioning is the only history.
 - **Calculated is never typed** — derivable figures are read-only everywhere; totals recompute live.
 - **N/A is neither fail nor blank** — needs a reason, excluded from compliance %, listed separately.
-- **Remarks are AI-polished on submit, and the polish is the record** — the rewrite happens once, at submit, and replaces the raw text (no verbatim copy is kept, so nothing can be reverted); the model rewrites prose only and never touches a number. **Severity/category/impact/corrective-action/SLA/ownership are now also AI-assigned at submit** (DeepSeek, using a defined rubric), replacing the deterministic classifier as the primary source — the classifier still runs, but only as a fallback for whatever the AI job didn't reach. The reviewer can still override every finding field, severity included, exactly as before. See ADR-0004 / ADR-0011 / UX-010.
+- **Remarks are AI-polished on submit, and the polish is the record** — the rewrite happens once, at submit, and replaces the raw text (no verbatim copy is kept, so nothing can be reverted); the model rewrites prose only and never touches a number. **Severity/category/impact/corrective-action/SLA/ownership are now also AI-assigned at submit** (OpenAI, using a defined rubric), replacing the deterministic classifier as the primary source — the classifier still runs, but only as a fallback for whatever the AI job didn't reach. Only Fail remarks are sent, and the report lists failed checkpoints only with the polished text, never the raw remark (ADR-0019). The reviewer can still override every finding field, severity included, exactly as before. See ADR-0004 / ADR-0011 / UX-010.
 
 ## Coding conventions
 - **Build every screen from its `.dc.html`** (see "Design source files") — open the file, copy exact

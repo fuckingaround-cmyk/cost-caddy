@@ -49,9 +49,10 @@ const SEVERITY_CHIP: Record<'High' | 'Medium' | 'Low', { bg: string; fg: string 
 };
 
 // Report v4 §2 (Audit report v4.dc.html ~line 407-780): one card per department, a
-// summary ribbon of checkpoint counts by severity, and the 7-column compliance table —
-// Ref ID / Checkpoint & Observation / Operational Impact / Risk Severity / Immediate
-// Corrective Action / SLA / Evidence. No §3 Findings Register (R9) — this table already
+// summary ribbon of failed-checkpoint counts by severity, and the 7-column compliance
+// table — Checkpoint / Observation / Risk Severity / Operational Impact / Corrective
+// Action / SLA / Evidence (the owner's column order, which supersedes the design file's).
+// Failed checkpoints only; the observation is the AI-polished remark. No §3 Findings Register (R9) — this table already
 // carries those columns.
 export function ComplianceSection({
   departments,
@@ -68,11 +69,10 @@ export function ComplianceSection({
   const cHigh = allItems.filter((i) => i.severity === 'High').length;
   const cMedium = allItems.filter((i) => i.severity === 'Medium').length;
   const cLow = allItems.filter((i) => i.severity === 'Low').length;
-  const cPassed = allItems.filter((i) => i.status === 'pass').length;
 
   return (
     <section data-gap="" style={{ marginBottom: 32 }}>
-      <SectionHeading label="Section 2 · Department Checklists & Compliance Matrix" right={`${departments.length} departments · ${cTotal} checkpoints`} />
+      <SectionHeading label="Section 2 · Department Checklists & Compliance Matrix" right={`${departments.length} departments · ${cTotal} failed checkpoints`} />
 
       {showSummaryRibbon && (
         <div
@@ -87,11 +87,10 @@ export function ComplianceSection({
             boxShadow: 'var(--shadow-card)',
           }}
         >
-          <RibbonCell value={cTotal} label="Checkpoints" color="var(--r-ink)" />
+          <RibbonCell value={cTotal} label="Failed" color="var(--r-ink)" />
           <RibbonCell value={cHigh} label="High" color="var(--report-sev-high-fg)" />
           <RibbonCell value={cMedium} label="Medium" color="var(--report-sev-medium-fg)" />
-          <RibbonCell value={cLow} label="Low" color="var(--r-ink-2)" />
-          <RibbonCell value={cPassed} label="Passed" color="var(--navy-700)" last />
+          <RibbonCell value={cLow} label="Low" color="var(--r-ink-2)" last />
         </div>
       )}
 
@@ -123,13 +122,13 @@ function DepartmentCard({ index, dept, interactive }: { index: number; dept: Dep
         <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--r-border-2)', fontSize: 10.5, fontWeight: 600, color: 'var(--r-muted)', background: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              <th style={{ width: '6%', padding: '10px 12px 10px 16px', fontWeight: 600 }}>Ref ID</th>
-              <th style={{ width: '22%', padding: '10px 12px', fontWeight: 600 }}>Checkpoint &amp; Observation</th>
-              <th style={{ width: '18%', padding: '10px 12px', fontWeight: 600 }}>Operational Impact</th>
+              <th style={{ width: '15%', padding: '10px 12px 10px 16px', fontWeight: 600 }}>Checkpoint</th>
+              <th style={{ width: '19%', padding: '10px 12px', fontWeight: 600 }}>Observation</th>
               <th style={{ width: '9%', padding: '10px', textAlign: 'center', fontWeight: 600 }}>Risk Severity</th>
-              <th style={{ width: '22%', padding: '10px 12px', fontWeight: 600 }}>Immediate Corrective Action</th>
-              <th style={{ width: '12%', padding: '10px', textAlign: 'center', fontWeight: 600 }}>SLA</th>
-              <th style={{ width: '11%', padding: '10px 16px 10px 8px', textAlign: 'center', fontWeight: 600 }}>Evidence</th>
+              <th style={{ width: '17%', padding: '10px 12px', fontWeight: 600 }}>Operational Impact</th>
+              <th style={{ width: '20%', padding: '10px 12px', fontWeight: 600 }}>Corrective Action</th>
+              <th style={{ width: '10%', padding: '10px', textAlign: 'center', fontWeight: 600 }}>SLA</th>
+              <th style={{ width: '10%', padding: '10px 16px 10px 8px', textAlign: 'center', fontWeight: 600 }}>Evidence</th>
             </tr>
           </thead>
           <tbody style={{ fontSize: 12 }}>
@@ -144,21 +143,16 @@ function DepartmentCard({ index, dept, interactive }: { index: number; dept: Dep
 }
 
 function ComplianceRow({ item, zebra, interactive }: { item: ComplianceItem; zebra: boolean; interactive: boolean }) {
-  const isFinding = item.status === 'fail';
   const chip = item.severity ? SEVERITY_CHIP[item.severity] : SEVERITY_CHIP.Low;
 
   return (
     <tr style={{ borderBottom: '1px solid var(--r-border)', background: zebra ? 'var(--r-surface-alt-2)' : '#fff' }}>
-      <td style={{ padding: '12px 12px 12px 16px', verticalAlign: 'top', fontFamily: 'var(--font-report-mono)', fontSize: 11, color: 'var(--r-ink-2)', fontWeight: 600 }}>{item.refId}</td>
-      <td style={{ padding: 12, verticalAlign: 'top', color: 'var(--r-ink)' }}>
-        <p style={{ margin: '0 0 2px', fontWeight: 600, fontSize: 12.5, color: 'var(--r-ink)' }}>{item.label}</p>
-        <p style={{ margin: 0, color: 'var(--r-ink-2)', fontSize: 11.5, lineHeight: 1.5 }}>{item.observation || '—'}</p>
+      <td style={{ padding: '12px 12px 12px 16px', verticalAlign: 'top', color: 'var(--r-ink)' }}>
+        <p style={{ margin: 0, fontWeight: 600, fontSize: 12.5, color: 'var(--r-ink)' }}>{item.label}</p>
       </td>
-      <td style={{ padding: 12, verticalAlign: 'top', color: 'var(--r-ink-2)', fontSize: 11, lineHeight: 1.5 }}>
-        {isFinding ? item.impact || '—' : item.status === 'na' ? '—' : 'No deviation observed.'}
-      </td>
+      <td style={{ padding: 12, verticalAlign: 'top', color: 'var(--r-ink-2)', fontSize: 11.5, lineHeight: 1.5 }}>{item.observation || '—'}</td>
       <td style={{ padding: '12px 10px', verticalAlign: 'top', textAlign: 'center' }}>
-        {isFinding && item.severity ? (
+        {item.severity ? (
           <span
             style={{
               display: 'inline-block',
@@ -176,32 +170,14 @@ function ComplianceRow({ item, zebra, interactive }: { item: ComplianceItem; zeb
           >
             {item.severity}
           </span>
-        ) : item.status === 'pass' ? (
-          <span
-            style={{
-              display: 'inline-block',
-              fontFamily: 'var(--font-report-mono)',
-              fontSize: 9.5,
-              fontWeight: 700,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              padding: '3px 9px',
-              borderRadius: 4,
-              background: 'var(--report-sev-low-bg)',
-              color: 'var(--navy-700)',
-            }}
-          >
-            Passed
-          </span>
         ) : (
-          <span style={{ fontSize: 11, color: 'var(--r-muted)' }}>N/A</span>
+          <span style={{ fontSize: 11, color: 'var(--r-muted)' }}>—</span>
         )}
       </td>
-      <td style={{ padding: 12, verticalAlign: 'top', color: isFinding ? 'var(--r-ink-2)' : 'var(--r-muted)', fontStyle: isFinding ? 'normal' : 'italic', fontSize: 11.5, lineHeight: 1.6 }}>
-        {isFinding ? item.correctiveAction || '—' : item.status === 'na' ? '—' : 'Maintain current standard.'}
-      </td>
-      <td style={{ padding: '12px 10px', verticalAlign: 'top', textAlign: 'center', fontFamily: 'var(--font-report-mono)', fontWeight: isFinding ? 700 : 400, color: isFinding ? 'var(--report-sev-high-fg)' : 'var(--r-muted)', fontSize: 11 }}>
-        {isFinding ? item.sla || '—' : '–'}
+      <td style={{ padding: 12, verticalAlign: 'top', color: 'var(--r-ink-2)', fontSize: 11, lineHeight: 1.5 }}>{item.impact || '—'}</td>
+      <td style={{ padding: 12, verticalAlign: 'top', color: 'var(--r-ink-2)', fontSize: 11.5, lineHeight: 1.6 }}>{item.correctiveAction || '—'}</td>
+      <td style={{ padding: '12px 10px', verticalAlign: 'top', textAlign: 'center', fontFamily: 'var(--font-report-mono)', fontWeight: 700, color: 'var(--report-sev-high-fg)', fontSize: 11 }}>
+        {item.sla || '—'}
       </td>
       <td style={{ padding: '12px 16px 12px 8px', verticalAlign: 'top', textAlign: 'center', color: 'var(--r-muted)', fontFamily: 'var(--font-report-mono)', fontSize: 11 }}>
         {item.photos.length > 0 ? (

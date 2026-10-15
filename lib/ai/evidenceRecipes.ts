@@ -32,11 +32,13 @@ export const EVIDENCE_RECIPES: Record<EvidencePhotoType, { columns: string[]; hi
   },
 };
 
-export function evidenceExtractionPrompt(type: EvidencePhotoType): string {
+// Transcription rules for one register photo of this type — embedded in the single
+// extract-and-write-findings call (lib/ai/analyseRegisterEvidence.ts, ADR-0018).
+export function evidenceTranscriptionRules(type: EvidencePhotoType): string {
   const recipe = EVIDENCE_RECIPES[type];
   return `
-You are transcribing a photographed tabular financial record — ${recipe.hint} — exactly as printed or
-handwritten. Return every cell's value verbatim, under exactly these column headers, in this order:
+Each photo is ${recipe.hint}. Transcribe every cell's value verbatim, exactly as printed or
+handwritten, under exactly these column headers, in this order:
 ${recipe.columns.map((c) => `"${c}"`).join(', ')}.
 
 Work strictly row by row, top to bottom, and transcribe every row — do not skip, merge, reorder or
@@ -45,12 +47,8 @@ misspelled (e.g. "Discount Reson", "Time Diff", "Cancelled By"); match each to t
 same meaning. A listed column with no counterpart in the photo gets empty strings.
 
 Never sum, average, round, reformat a date, recompute a percentage, or infer a value that isn't legible.
-An illegible or blank cell must be an empty string, never a guess. If a column shown above has no matching
-data in the photo, still include it with empty strings for every row. If the photo has no row/column
-structure at all (not actually a table), return zero rows.
-
-Respond with a single JSON object of the exact shape:
-{"columns": ${JSON.stringify(recipe.columns)}, "rows": [["...", "..."], ...]}
-Each row array must have exactly ${recipe.columns.length} entries, positionally aligned to "columns".
+An illegible or blank cell must be an empty string, never a guess. If the photo has no row/column
+structure at all (not actually a table), return zero rows for it.
+Each row array must have exactly ${recipe.columns.length} entries, positionally aligned to the columns.
 `.trim();
 }

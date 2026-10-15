@@ -18,7 +18,8 @@ const ScoredItemSchema = z.object({
 const ScoredRemarksSchema = z.object({ items: z.array(ScoredItemSchema) });
 
 const SCORE_TIMEOUT_MS = 45_000;
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
+const OPENAI_TEXT_MODEL = 'gpt-4o-mini';
 
 const SYSTEM_PROMPT = `
 You turn a field auditor's shorthand notes into polished, professional report prose for a
@@ -31,26 +32,25 @@ figure that isn't already there. Keep the auditor's meaning intact — you are c
 not re-assessing the wording. Return exactly one polished remark per input id, in the same
 field "polishedRemark".
 
-For items whose "status" is "fail" (never for "na"), additionally assess severity using
-this rubric, and return "category", "severity", "impact", "correctiveAction", "sla", and
+Every item you receive is a failed checkpoint. For each one, additionally assess severity
+using this rubric, and return "category", "severity", "impact", "correctiveAction", "sla", and
 "ownership" alongside "polishedRemark":
 
 ${SEVERITY_RUBRIC}
 
 Respond with a single JSON object of the exact shape:
 {"items": [{"id": "...", "polishedRemark": "...", "category": "...", "severity": "High|Medium|Low", "impact": "...", "correctiveAction": "...", "sla": "...", "ownership": "..."}]}
-Omit category/severity/impact/correctiveAction/sla/ownership for non-fail items.
 `.trim();
 
-async function callDeepSeek(items: { id: string; checkpoint: string; department: string; status: string; remark: string }[]) {
-  const res = await fetch(DEEPSEEK_API_URL, {
+async function callOpenAI(items: { id: string; checkpoint: string; department: string; status: string; remark: string }[]) {
+  const res = await fetch(OPENAI_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: OPENAI_TEXT_MODEL,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -58,16 +58,16 @@ async function callDeepSeek(items: { id: string; checkpoint: string; department:
       ],
     }),
   });
-  if (!res.ok) throw new Error(`DeepSeek request failed: ${res.status}`);
+  if (!res.ok) throw new Error(`OpenAI request failed: ${res.status}`);
   const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('DeepSeek response missing content');
+  if (!content) throw new Error('OpenAI response missing content');
   return ScoredRemarksSchema.parse(JSON.parse(content));
 }
 
 // ADR-0011 (replaces B6/ADR-0004's polishAuditRemarks) — queued from `submitAudit` via
 // `after()`, never awaited by the request that triggers it. In one call: rewrites every
-// non-pass remark into report prose (replacing the raw remark — no verbatim copy kept,
+// Fail remark into report prose (replacing the raw remark — no verbatim copy kept,
 // same as before) AND assigns severity/category/impact/correctiveAction/sla/ownership for
 // every Fail item, using the rubric above. The reviewer can still edit every finding
 // field, severity included — this only changes where the starting value comes from and
@@ -82,14 +82,14 @@ export async function scoreAuditRemarks(auditId: string): Promise<void> {
       .from(auditItems)
       .where(and(eq(auditItems.auditId, auditId), eq(auditItems.section, 'checklist')));
 
-    const toScore = items.filter((it) => it.status !== 'pass' && it.status !== 'pending' && it.remark.trim() !== '');
+    const toScore = items.filter((it) => it.status === 'fail' && it.remark.trim() !== '');
     if (toScore.length === 0) {
       await db.update(audits).set({ aiState: 'ready' }).where(eq(audits.id, auditId));
       return;
     }
 
     const parsed = await withTimeout(
-      callDeepSeek(
+      callOpenAI(
         toScore.map((it) => ({ id: it.id, checkpoint: it.label, department: it.cat, status: it.status, remark: it.remark })),
       ),
       SCORE_TIMEOUT_MS,
@@ -101,7 +101,7 @@ export async function scoreAuditRemarks(auditId: string): Promise<void> {
         const scored = scoredById.get(it.id);
         if (!scored || scored.polishedRemark.trim() === '') continue;
 
-        if (it.status === 'fail' && scored.severity && scored.category && scored.impact && scored.correctiveAction && scored.sla && scored.ownership) {
+        if (scored.severity && scored.category && scored.impact && scored.correctiveAction && scored.sla && scored.ownership) {
           await tx
             .update(auditItems)
             .set({
@@ -118,7 +118,8 @@ export async function scoreAuditRemarks(auditId: string): Promise<void> {
             })
             .where(eq(auditItems.id, it.id));
         } else {
-          await tx.update(auditItems).set({ remark: scored.polishedRemark }).where(eq(auditItems.id, it.id));
+          // Polished but not fully scored — classifyFinding fills the rest at "Generate report".
+          await tx.update(auditItems).set({ remark: scored.polishedRemark, aiAssessment: scored }).where(eq(auditItems.id, it.id));
         }
       }
       await tx.update(audits).set({ aiState: 'ready' }).where(eq(audits.id, auditId));

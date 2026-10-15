@@ -42,8 +42,8 @@ Two delivery stages:
 | Storage | **Supabase Storage** (S3-compatible, signed URLs) | Holds auditor photos, generated report PDFs, imported operational files. Cloudflare R2 is the fallback only if this ever gets high-traffic/file-heavy. |
 | PDF export | **Playwright** (headless Chromium) against the print CSS | Report is already print-first (`data-avoid` / `data-break`). Version-stamped output. The only export format shipped — no XLSX for now (`EXECUTION.md` R12). |
 | Hosting | **Cloudflare or Vercel** (free tier at this scale) | Next.js app here; Supabase holds Postgres + Storage. Portable for eventual client handover. |
-| LLM layer | **DeepSeek** (`deepseek-chat`, plain `fetch`, no SDK) | Introduced in **B6** (submit-time remark polish + severity scoring, ADR-0011 — was Anthropic under ADR-0004) — earlier than originally planned. Stage B's analytics narration provider is not yet decided; it is no longer assumed to reuse this client. No job queue yet: B6 uses Next's `after()` to run the job post-response rather than Stage B's Graphile Worker/pg-boss, since Stage A has no worker host. |
-| Vision layer | **OpenAI** (`gpt-4o-mini`, plain `fetch`, no SDK) | Introduced in **B7** (evidence-photo table extraction, ADR-0012) — independent of DeepSeek's job, sees only evidence photos, never remark text or financial figures. Same `after()`-based, fire-and-forget pattern as B6; a failure never blocks upload or submit. Was Gemini until ADR-0014 (the original project had zero API quota provisioned). |
+| LLM layer | **OpenAI** (`gpt-4o-mini`, ADR-0017 — was DeepSeek, plain `fetch`, no SDK) | Introduced in **B6** (submit-time remark polish + severity scoring, ADR-0011 — was Anthropic under ADR-0004) — earlier than originally planned. Stage B's analytics narration provider is not yet decided; it is no longer assumed to reuse this client. No job queue yet: B6 uses Next's `after()` to run the job post-response rather than Stage B's Graphile Worker/pg-boss, since Stage A has no worker host. |
+| Vision layer | **OpenAI** (`gpt-4o`, plain `fetch`, no SDK) | Introduced in **B7** (evidence-photo table extraction, ADR-0012) — a separate job from the text LLM layer, sees only evidence photos, never remark text or financial figures. Same `after()`-based, fire-and-forget pattern as B6; a failure never blocks upload or submit. Was Gemini until ADR-0014 (the original project had zero API quota provisioned). |
 
 **Why TypeScript end-to-end (not a Python backend):** the frontend is TS regardless; a single language
 gives shared types across the wire (no Pydantic-vs-TS drift on deep, versioned shapes), a near-mechanical
@@ -58,7 +58,7 @@ rejected: no lower floor, more billing complexity, and Firebase would mean aband
 
 ### Stage B additions (Phase 3)
 Excel ingestion **SheetJS**; mapping engine **typed TS** (+ optional **Arquero**); analytics **TS**;
-LLM layer **not yet decided** (DeepSeek is Stage A's choice for B6; Stage B may reuse it or pick another —
+LLM layer **not yet decided** (OpenAI is Stage A's choice for B6; Stage B may reuse it or pick another —
 open per ADR-0011); background jobs **Graphile Worker / pg-boss** (Postgres-backed);
 worker host a small always-on container (Fly/Railway) since long parse+LLM jobs exceed serverless
 timeouts; dashboards **Recharts**; white-label theming via the existing CSS-variable token layer.
@@ -178,7 +178,7 @@ stacked steps + right-aligned progress). Layout differs; behaviour and data are 
 ---
 
 ## 7. Report pipeline
-**Submit → AI (DeepSeek) polishes every non-pass remark into report prose, replacing the raw text, and
+**Submit → AI (OpenAI) polishes every Fail remark into report prose, replacing the raw text (Pass/N-A are never sent, ADR-0019), and
 scores severity/category/impact/corrective-action/SLA/ownership for every Fail item** against a defined
 rubric (async job with an `aiState`; a failure never blocks or reverses the submit — ADR-0011, was
 ADR-0004) → Review (submission shown **exactly as captured**, never edited in place; findings usually
@@ -200,7 +200,7 @@ now; `EXECUTION.md` R12).
   `revGroup: 'bar'|'kitchen'` model, not the report mock's three-way Food/Bar/Liquor split (`DESIGN.md`
   Part B **UX-014**). Operational-file import sits behind a per-client adapter interface (formats vary,
   not yet designed) — C2 only carries each attached file's type/period/parse-status through untouched.
-- **Findings generation** is primarily `lib/ai/scoreAuditRemarks.ts` now (ADR-0011) — DeepSeek assigns
+- **Findings generation** is primarily `lib/ai/scoreAuditRemarks.ts` now (ADR-0011) — OpenAI assigns
   category/severity/impact/correctiveAction/sla/ownership for every Fail item at submit, against
   `lib/ai/severityRubric.ts`'s scoring matrix. `lib/report/classify.ts`'s `classifyFinding` — the mock's
   `CATEGORY_RULES`/`classify` ported verbatim (10 keyword rules over label+remark, Operational
@@ -213,21 +213,20 @@ now; `EXECUTION.md` R12).
   (A5), so there's nothing for a fallback scheme to cover. Pass/N-A items are never classified; a status
   correction (C1) that moves an item away from Fail clears any existing finding so "Pass
   carries no severity" keeps holding after an edit.
-- **Evidence-photo table extraction** (`lib/ai/extractEvidenceTable.ts`, ADR-0012, **B7**) is a second,
-  independent AI job: the auditor picks a fixed recipe (`lib/ai/evidenceRecipes.ts`) per evidence photo
-  at capture — checklist checkpoints can only *suggest* a default (`lib/evidence/suggest.ts`), never
-  decide it — and OpenAI transcribes the photo's table verbatim under that recipe's columns. Fires from
-  `setEvidencePhotoType` (fire-and-forget), with a submit-time sweep (`sweepEvidenceExtraction`) as the
-  safety net for whatever the capture-time trigger missed — same shape as B6/`scoreAuditRemarks`. An
-  extracted table is reviewer-editable and shown immediately, the same trust model `updateFinding` gives
-  AI-assigned severity — no separate confirm step.
+- **Evidence-photo read + findings** (`lib/ai/analyseRegisterEvidence.ts`, ADR-0018, supersedes the
+  two-step flow of ADR-0012/0015, **B7/C6**) is one OpenAI vision call per POS report: every photo of the
+  register plus the auditor's status/remark in; each photo's verbatim table (fixed recipe columns,
+  `lib/ai/evidenceRecipes.ts`) and the Findings and Observations + Corrective Measures out. Nothing is
+  read at upload or in the auditor's request — `submitAudit` queues it with `after()` (alongside
+  `scoreAuditRemarks`, in parallel), so the auditor is never blocked. Tables are stored per photo
+  (`audit_item_files.extracted_table`), findings per report (`audit_evidence_findings`, keyed
+  `(audit_id, evidence_type, report_label)` via `posFindingsKey`). Everything is reviewer-editable and
+  shown immediately (same trust model as AI-assigned severity). "Generate report" and the per-photo
+  retry re-run it for anything missing, keeping findings an admin already wrote; "Regenerate" on the
+  findings is text-only from the stored (possibly corrected) table (`generateRegisterFindings.ts`).
 - **POS reports** (ADR-0015, **C6**) are a third template section (`template_pos_reports`) that snapshots
   onto the audit as `audit_items` with `section = 'pos_report'` and a `report_type` (the recipe of every photo
-  attached, so no picker). At submit one `after()` job runs remark scoring → extraction sweep →
-  `lib/ai/generateRegisterFindings.ts`: DeepSeek writes one Findings and Observations + one Corrective Measures
-  block per report from the auditor's remark and the extracted table (text-only; every quotable figure traces
-  to a stored cell), stored in `audit_evidence_findings`. "Generate report" fills missing ones; the admin can
-  edit, Save or Regenerate. The prompt forbids computing an exact numeric delta against the plain-text policy
+  attached, so no picker). The prompt forbids computing an exact numeric delta against the plain-text policy
   context (`lib/ai/evidenceFindingsPolicyContext.ts`), keeping D12 intact. POS items are excluded from the
   compliance matrix, scoring, `scoreAuditRemarks` and `classifyFinding`. A report is a preset type or an
   admin-named custom one (`report_type = 'other'` + `template_pos_reports.label`); findings are keyed
@@ -235,7 +234,7 @@ now; `EXECUTION.md` R12).
 - **Report v4** (`app/admin/(protected)/review/[id]/report/`) has its own type system (Inter Tight +
   IBM Plex Mono `tabular-nums`, Material Symbols), is print-first (`[data-avoid]`/`[data-break]` in
   `globals.css`), and renders §1 (KPI strip + revenue matrix + two composition donuts), §1B (costing via
-  `lib/report/costingBreakdown.ts`), §2 (per-department compliance table from C3's findings), and §3
+  `lib/report/costingBreakdown.ts`), §2 (per-department table of **failed** checkpoints only — Checkpoint · Observation · Risk Severity · Operational Impact · Corrective Action · SLA · Evidence; observation is the AI-polished text, never raw — ADR-0019), and §3
   (**POS Reports**, `PosReportSection.tsx` — per POS report: heading → Findings and
   Observations → OpenAI-extracted table(s) → Corrective Measures, ADR-0012/ADR-0014/ADR-0015; not R9's Findings
   Register, which is still cut). `showCharts`/`showSummaryRibbon` are
@@ -276,7 +275,7 @@ Correctness load-bearers — encode in schema, guard in review:
   the checklist item status is now Pass/Fail/N-A only; see UX-018).
 - **Remarks are AI-polished on submit, and the polish is the record.** The rewrite happens once, at
   submit, and replaces the raw text; no verbatim copy is kept, so nothing can be reverted. The model
-  rewrites prose only and never touches a number. Severity/impact/corrective-action are still set by the
+  rewrites prose only and never touches a number. The raw wording is never shown in the report; only Fail remarks are sent (ADR-0019). Severity/impact/corrective-action are still set by the
   **reviewer**, never in the field. **ADR-0004** / UX-010 — this reverses the earlier
   "remarks are quoted, not rewritten" rule and records the trade-off.
 - **Evidence-table extraction is verbatim OCR, not narration or computation.** OpenAI transcribes
@@ -298,7 +297,7 @@ Carried from the Plan §9 — resolve before the dependent work: (1) connectivit
 the no-offline bet); (2) real client Excel samples before Phase 3 (drive the mapping engine + the
 TS-vs-Python ingestion call, D11); (3) which Phase 3 modules are truly in the 7 weeks; (4) **data-to-LLM
 boundary sign-off + residency (D12) — now broader than financial data, since ADR-0004/ADR-0011 send every
-non-pass auditor remark (and, for Fail items, its severity assessment) to DeepSeek at submit, and
+Fail auditor remark (and its severity assessment) to OpenAI at submit, and
 ADR-0012/ADR-0014 sends evidence-photo bytes to OpenAI for any photo the auditor picks a recipe for**; (5) whether
 `org_id` grows into real multi-tenancy;
 (6) data residency (India / DPDP Act); (7) outlet report-token expiry policy.

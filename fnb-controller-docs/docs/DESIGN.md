@@ -228,7 +228,7 @@ required on every point"; a pass is recorded without supporting words. Recorded 
 named `observation` — see UX-024.)
 
 ### UX-010 — AI polishes remarks and scores severity on submit *(supersedes UX-004 on the remarks point)*
-**Decision:** submitting queues a job (now DeepSeek, ADR-0011; was Anthropic, ADR-0004) that rewrites every
+**Decision:** submitting queues a job (now OpenAI, ADR-0011; was Anthropic, ADR-0004) that rewrites every
 non-pass remark into report prose — the polished text **replaces** the raw remark, no verbatim copy
 retained — and, for every Fail item, also assigns severity/category/impact/corrective-action/SLA/ownership
 against a defined scoring rubric (`lib/ai/severityRubric.ts`). The model rewrites prose only and never
@@ -475,7 +475,7 @@ table against the original photo, which the table's caption links to directly.
 heading → **Findings and Observations** (prose) → the extracted table(s) → **Corrective Measures**
 (prose), one Findings/Corrective-Measures pair per evidence type per audit — not per photo or per row.
 The reviewer writes the raw draft on the review screen (`EvidenceFindingsPanel.tsx`); a "Polish with AI"
-button rewrites it via DeepSeek, grounded in that type's own extracted rows (ADR-0013). Un-recorded text
+button rewrites it via OpenAI, grounded in that type's own extracted rows (ADR-0013). Un-recorded text
 renders as an italic "Not yet recorded." placeholder rather than hiding the block, so every register type
 always shows the full heading→findings→table→corrective-measures shape even before a reviewer has
 written anything. **Why:** the product owner wants this section to read like an actual finding (matching
@@ -539,3 +539,22 @@ APC is the term the clients use. **Trade-off:** supersedes the v4 design's six-c
 **Why:** the fixed list emptied out as presets were added and blocked reports an outlet's POS actually produces (void, settlement…). **Trade-off:** custom reports use the generic "other register" extraction prompt, not a tuned recipe.
 
 **Update 2026-10-15:** N/A is now optional on every point — no reason, no remark; only Fail still needs a remark. Supersedes UX-009/R10's N/A reason requirement.
+
+### UX-033 — Register tables and findings appear after submit, not at capture (ADR-0018)
+**Decision:** the auditor uploads a register photo and writes a remark; nothing is read at that point and
+no extracted table is shown to them. After submit, one backend call fills each photo's table and the
+report's Findings and Observations + Corrective Measures, which the admin sees (editable) under the
+restaurant's review/report. Until it lands the photo shows "Reading this photo…" / "Waiting for the backend
+read after submit…", and a failed read offers Retry. **Why:** the auditor's job should end at submit with
+no AI waiting or blocking, and one call that both reads the photo and writes the findings is simpler and
+cheaper than two. **Trade-off:** findings are written from the model's own reading, so an admin who fixes a
+misread cell should press Regenerate on the findings (text-only from the corrected table).
+
+### UX-034 — The report lists failed checkpoints only, with polished observations (client feedback, 2026-10-15)
+**Decision:** Section 2 of the report shows only Fail checkpoints (Pass and N/A rows are dropped, and a
+department with no failures doesn't appear). Columns, in the owner's order: Checkpoint · Observation · Risk
+Severity · Operational Impact · Corrective Action · SLA · Evidence (no Ref ID column). The Observation is
+only ever the AI-polished remark; if the submit-time job hasn't polished a point yet it shows "—" rather
+than the auditor's raw wording. The summary ribbon is Failed / High / Medium / Low (no Passed count).
+**Why:** the client wants the report to be actionable findings, not a checklist echo, and never to see
+field shorthand. Only Fail points are sent to OpenAI at submit. Supersedes the 7-column order in Report v4. See ADR-0019.

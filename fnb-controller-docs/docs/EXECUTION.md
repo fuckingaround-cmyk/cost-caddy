@@ -298,12 +298,12 @@ version checks only the checklist and is incomplete.
 Screens:   — (a status indicator on pending and on review)
 Design:    NONE — this package has no design reference. It is a product decision recorded
            in ADR-0004 (prose polish) and ADR-0011 (severity scoring, provider change to
-           DeepSeek); the mock polishes and classifies admin-side inside generateReport()
+           OpenAI); the mock polishes and classifies admin-side inside generateReport()
            instead
 Depends:   B5
 Traces to: ADR-0004; ADR-0011; DESIGN Part B UX-010 (supersedes UX-004)
-Done when: submitting queues a single DeepSeek job that (a) rewrites every non-pass remark
-           into report prose and stores it in place of the raw remark, and (b) for every
+Done when: submitting queues a single OpenAI job that (a) rewrites every Fail remark
+           (Pass/N-A are never sent — ADR-0019) into report prose and stores it in place of the raw remark, and (b) for every
            Fail item, assigns category/severity/impact/correctiveAction/sla/ownership
            against the scoring rubric (lib/ai/severityRubric.ts); the audit carries an AI
            state (polishing / ready / failed) surfaced on the auditor's pending list and
@@ -332,10 +332,11 @@ Done when: the auditor can pick a fixed evidence-type recipe (Discount Register,
            Cancellations, Non-Chargeable / Complimentary Report, Bill Modification Log, Item
            Cancellation Log, Other) for any
            image evidence photo, defaulted from the checkpoint but always changeable;
-           picking one queues an OpenAI extraction that transcribes the photo's table
-           verbatim under that recipe's columns; a failure or timeout NEVER blocks upload
-           or submit — the file simply stays without a table, with a submit-time sweep as
-           the safety net and a manual retry on the admin review screen; every extracted
+           nothing is read at upload — after submit, one backend OpenAI call per report
+           (ADR-0018) transcribes each photo's table verbatim under that recipe's columns
+           and writes the findings in the same call; a failure or timeout NEVER blocks
+           upload or submit — the file simply stays without a table, with a manual retry
+           on the admin review screen; every extracted
            cell is reviewer-editable and shown immediately, the same trust model
            updateFinding already gives AI-assigned severity; and a new "Section 3 ·
            Evidence Registers" appears in the report, grouped by evidence type, whenever
@@ -391,7 +392,7 @@ Done when: every Fail becomes a finding with reference ID, category, severity, i
            `observation` removed, see `DESIGN.md` Part B **UX-024**)
 ```
 
-Since **ADR-0011**, B6's DeepSeek job already assigns most Fail items' findings at submit — `classifyFinding`
+Since **ADR-0011**, B6's OpenAI job already assigns most Fail items' findings at submit — `classifyFinding`
 (`CATEGORY_RULES`, 10 keyword rules over `label + remark`, falling back to Operational Control / Medium) is
 now the **fallback**, invoked here only for Fail items with no severity yet: ones the AI job didn't reach
 (failed/timed out) or that were corrected into Fail after submit. Idempotent either way — Regenerate never
@@ -412,15 +413,16 @@ Done when: §1 Key Financial & Unit Economic Metrics (KPI strip — Gross Sale, 
            showCharts), §1B Costing & Cost as % of Sales (Bar & Cellar → Kitchen &
            Production → F&B → Net F&B), and §2 Department Checklists & Compliance Matrix
            (severity ribbon behind showSummaryRibbon, one numbered card per department,
-           columns Ref ID / Checkpoint & Observation / Operational Impact / Risk Severity /
-           Immediate Corrective Action / SLA / Evidence) all render from real data and
+           Fail checkpoints only (ADR-0019, UX-034), columns Checkpoint / Observation (AI-polished
+           only, never the raw remark) / Risk Severity / Operational Impact / Corrective Action /
+           SLA / Evidence) all render from real data and
            print correctly with data-avoid and data-break honoured; and §3 Evidence
            POS Reports (C6/ADR-0015) renders, per POS report: a heading, Findings and
            Observations, the extracted table(s) and Corrective Measures — each falling
            back to "Not yet recorded" until written
 ```
 
-- **No §3 Findings Register** (R9) — §2's table already carries those columns. §3 is instead
+- **No §3 Findings Register** (R9) — §2's table already carries those columns (Ref ID was later dropped, UX-034). §3 is instead
   **Evidence Registers** (B7/ADR-0012) — an unrelated, later addition, not the register R9 cut.
 - Evidence photos render as real clickable/embedded thumbnails, on the Report screen and in the PDF (UX-017).
 - All numbers in IBM Plex Mono with `tabular-nums`; currency Indian short-scale via the F7 formatter.
@@ -472,10 +474,10 @@ Traces to: ADR-0015 (supersedes ADR-0013's reviewer-drafted flow)
 Done when: a template's POS Report section snapshots onto the audit as pos_report items;
            the auditor sees a POS Report tab (only if the template has one) with the
            checklist item UI and no photo type picker, and a photo on a POS item is
-           extracted under that report's recipe automatically; submitting queues, in
-           order, remark scoring, the extraction sweep, and a DeepSeek job that writes
-           one Findings and Observations + one Corrective Measures block per report from
-           the auditor's remark and the extracted table (never computing a numeric delta
+           read under that report's recipe after submit; submitting queues, in parallel,
+           remark scoring and one OpenAI call per report (ADR-0018) that extracts every
+           photo's table and writes one Findings and Observations + one Corrective
+           Measures block from the auditor's remark and that table (never computing a numeric delta
            against the plain-text policy context); a failure never blocks submit and
            "Generate report" fills anything missing without overwriting; the admin sees
            the text pre-filled, can edit and Save or Regenerate, and cannot edit table

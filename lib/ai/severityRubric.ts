@@ -1,4 +1,4 @@
-// ADR-0011 — the scoring matrix DeepSeek is given at submit time to ground its severity
+// ADR-0011 — the scoring matrix OpenAI is given at submit time to ground its severity
 // judgment. Adapted from lib/report/classify.ts's CATEGORY_RULES (the deterministic
 // floor this call now supersedes as primary, keeping classify.ts as the fallback for
 // whatever this call doesn't reach). Severity is High/Medium/Low only (R7, UX-006).

@@ -11,8 +11,7 @@ import { auditItemFilePath, deleteFile, uploadFile } from '@/lib/storage';
 import { parseMetricValue } from '@/lib/calc';
 import { isItemAnswered } from '@/lib/checklist/isItemAnswered';
 import { scoreAuditRemarks } from '@/lib/ai/scoreAuditRemarks';
-import { extractEvidenceTable, sweepEvidenceExtraction } from '@/lib/ai/extractEvidenceTable';
-import { generateRegisterFindings } from '@/lib/ai/generateRegisterFindings';
+import { analyseRegisterEvidence } from '@/lib/ai/analyseRegisterEvidence';
 
 async function requireOwnedAudit(auditId: string) {
   const user = await requireRole('auditor');
@@ -111,14 +110,11 @@ export async function uploadItemPhoto(auditItemId: string, formData: FormData): 
       storagePath: path,
       meta,
       // ADR-0015 — a photo on a POS report item is that report type's register: the type is
-      // implied by the item, so extraction is queued right here (no client round trip).
+      // implied by the item. Nothing is read here — the table and findings come from one
+      // backend call after submit (ADR-0018).
       evidenceType: kind === 'image' ? item.reportType : null,
     })
     .returning({ id: auditItemFiles.id });
-
-  if (kind === 'image' && item.reportType) {
-    after(() => extractEvidenceTable(row.id));
-  }
 
   return { id: row.id, name: file.name, meta, kind };
 }
@@ -163,12 +159,9 @@ export async function submitAudit(auditId: string): Promise<void> {
   // redirect() below — `after()` runs even when redirect/notFound is called), never
   // awaited here. A failure inside it can never block or reverse this submit — see
   // scoreAuditRemarks.
-  // Sequential on purpose: the register findings (ADR-0015) need every photo's table
-  // extracted (sweep is the safety net for any capture-time trigger that never fired).
+  // ADR-0018: remark scoring and the register photo read + findings are independent calls.
   after(async () => {
-    await scoreAuditRemarks(auditId);
-    await sweepEvidenceExtraction(auditId);
-    await generateRegisterFindings(auditId);
+    await Promise.all([scoreAuditRemarks(auditId), analyseRegisterEvidence(auditId)]);
   });
 
   redirect(`/auditor/report/${auditId}`);

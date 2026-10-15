@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { auditItemFiles, auditItems, auditMetricDefs, auditMetricValues, audits, outlets, templates, users } from '@/db/schema';
 import type { MetricDef, MetricValues } from '@/lib/calc';
@@ -191,6 +191,8 @@ export type AuditItemRow = {
   sla: string | null;
   ownership: string | null;
   resolutionStatus: (typeof auditItems.resolutionStatus.enumValues)[number] | null;
+  // True once the submit-time AI job has rewritten this item's remark (it stamps aiAssessment).
+  polished: boolean;
 };
 
 // B3 — the department checklist, in template order (sortOrder was assigned at A5's
@@ -218,6 +220,7 @@ export async function getAuditItems(auditId: string): Promise<AuditItemRow[]> {
       sla: auditItems.sla,
       ownership: auditItems.ownership,
       resolutionStatus: auditItems.resolutionStatus,
+      polished: sql<boolean>`${auditItems.aiAssessment} is not null`,
     })
     .from(auditItems)
     .where(eq(auditItems.auditId, auditId))

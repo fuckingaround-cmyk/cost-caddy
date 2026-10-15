@@ -48,7 +48,7 @@ export function EvidenceTablePanel({ auditId, photo }: { auditId: string; photo:
         )}
       </div>
 
-      {photo.extractionStatus === null && <div style={{ fontSize: 12, color: 'var(--muted)' }}>Queued for extraction…</div>}
+      {photo.extractionStatus === null && <div style={{ fontSize: 12, color: 'var(--muted)' }}>Waiting for the backend read after submit…</div>}
       {photo.extractionStatus === 'pending' && <div style={{ fontSize: 12, color: 'var(--muted)' }}>Reading this photo…</div>}
 
       {photo.extractionStatus === 'failed' && (

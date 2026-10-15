@@ -5,7 +5,7 @@ import { regenerateRegisterFindings, updateEvidenceFindings } from '@/lib/action
 import type { EvidencePhotoType } from '@/lib/evidence/types';
 
 // ADR-0015 — the Findings and Observations / Corrective Measures for one POS report,
-// generated at submit by DeepSeek from the auditor's remark + the extracted table and shown
+// generated at submit by OpenAI from the auditor's remark + the extracted table and shown
 // here pre-filled. The admin can edit and Save, or Regenerate (re-runs the same job,
 // overwriting the text). Empty until the submit-time job lands (or if it failed).
 export function EvidenceFindingsPanel({

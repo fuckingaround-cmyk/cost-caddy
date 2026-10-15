@@ -25,5 +25,8 @@ and are where *new* decisions get recorded going forward.
 | [0014](0014-openai-replaces-gemini-for-evidence-extraction.md) | OpenAI (`gpt-4o-mini`) replaces Gemini for evidence-table extraction — Gemini project had zero API quota | accepted | 2026-09-28 |
 | [0015](0015-pos-report-is-a-third-template-section.md) | POS Report is a third template section; register findings are generated at submit by DeepSeek from remark + table | accepted | 2026-09-28 |
 | [0016](0016-destructive-admin-actions-block-archive-or-cascade.md) | Destructive admin actions: restaurant delete blocked by audits, audit delete at any status, template archived when in use | accepted | 2026-09-28 |
+| [0017](0017-openai-replaces-deepseek-for-text-jobs.md) | OpenAI (`gpt-4o-mini`) replaces DeepSeek for remark scoring and register findings — single LLM provider | accepted | 2026-10-15 |
+| [0018](0018-single-backend-call-reads-register-photos-and-writes-findings.md) | One backend OpenAI call after submit reads register photos and writes their findings (no AI at upload) | accepted | 2026-10-15 |
+| [0019](0019-report-lists-failed-checkpoints-only-with-polished-observations.md) | Report lists failed checkpoints only; only Fail remarks go to the AI; raw remarks never reach the report | accepted | 2026-10-15 |
 
 Statuses: proposed · accepted · superseded (note which ADR supersedes it).

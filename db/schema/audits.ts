@@ -136,7 +136,7 @@ export const auditItems = pgTable(
     status: itemStatusEnum('status').notNull().default('pending'),
     remark: text('remark').notNull().default(''),
     naReason: text('na_reason'),
-    // Set by DeepSeek at submit (ADR-0011; fail only) — classifyFinding (C3) is now
+    // Set by OpenAI at submit (ADR-0011; fail only) — classifyFinding (C3) is now
     // only a fallback for whatever the AI job didn't reach. Still reviewer-editable.
     severity: severityEnum('severity'),
     impact: text('impact'),
@@ -147,7 +147,7 @@ export const auditItems = pgTable(
     // Set by report generation (C3), or by the submit-time AI job (ADR-0011).
     refId: text('ref_id'),
     category: text('category'),
-    // Raw structured DeepSeek output for this item (ADR-0011) — a superset of the
+    // Raw structured OpenAI output for this item (ADR-0011) — a superset of the
     // discrete columns above, kept so a future report-layout change can read more of
     // what the model already said without re-running scoring or touching this schema.
     aiAssessment: jsonb('ai_assessment'),
@@ -195,7 +195,7 @@ export const auditItemFiles = pgTable('audit_item_files', {
   uploadedAt: timestamp('uploaded_at', { withTimezone: true }).notNull().defaultNow(),
   // Evidence-photo table extraction (B7, ADR-0012). evidenceType is picked by the
   // auditor (null = not a register photo, or kind='file' — v1 is images only); once set
-  // it queues a Gemini vision extraction. extractionStatus is null until that first
+  // it is read by the single backend OpenAI call after submit (ADR-0018). extractionStatus is null until that first
   // attempt. extractedTable is { columns: string[], rows: string[][] } (rows positional
   // to columns, not keyed) — a verbatim transcription, reviewer-editable, shown in the
   // report immediately once extracted (same trust model as AI-assigned severity,
@@ -210,7 +210,7 @@ export const auditItemFiles = pgTable('audit_item_files', {
 // One Findings-and-Observations + Corrective-measures write-up per evidence type per
 // audit (ADR-0013) — not per photo/row, so this is keyed on (auditId, evidenceType),
 // separate from auditItemFiles. The reviewer writes the raw draft; "Polish with AI"
-// (DeepSeek, lib/ai/polishEvidenceFindings.ts) rewrites it in place, grounded in that
+// (OpenAI, lib/ai/polishEvidenceFindings.ts) rewrites it in place, grounded in that
 // type's extracted table rows — same "polish replaces raw, no verbatim kept" pattern as
 // ADR-0004's remark polish, just reviewer-triggered instead of automatic at submit.
 export const auditEvidenceFindings = pgTable(
