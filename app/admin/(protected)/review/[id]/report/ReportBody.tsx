@@ -80,7 +80,11 @@ export function ReportBody({
         <RevenueMatrix draft={draft} />
         {showCharts && (
           <div data-avoid="" data-gap="" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 24 }}>
-            <CompositionDonut title="Sales Composition" totalLabel={moneyShort(draft.kpis.grossSale)} slices={salesSlices} />
+            <CompositionDonut
+              title="Sales Composition"
+              totalLabel={moneyShort({ status: 'ok', value: salesSlices.reduce((sum, s) => sum + s.value, 0) })}
+              slices={salesSlices}
+            />
             <CompositionDonut
               title="Cost Composition"
               totalLabel={moneyShort({ status: 'ok', value: costSlices.reduce((sum, s) => sum + s.value, 0) })}

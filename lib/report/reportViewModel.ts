@@ -130,13 +130,11 @@ export async function loadReportViewModel(orgId: string, auditId: string): Promi
   }
 
   const SALES_COLORS = ['var(--status-pass-bg-deep)', 'var(--status-pass-fg)', 'var(--report-chart-teal-1)', 'var(--report-chart-teal-2)', 'var(--report-chart-teal-3)'];
-  const taxes = figureValue(draft.kpis.totalTaxes);
-  const charges = figureValue(draft.kpis.totalCharges);
-  const salesSlices: DonutSlice[] = [
-    ...draft.revenueMatrix.rows.map((r, i) => ({ label: r.label, value: figureValue(r.netSales) ?? 0, color: SALES_COLORS[i % SALES_COLORS.length] })),
-    { label: 'Service charge', value: charges ?? 0, color: 'var(--report-chart-teal-4)' },
-    { label: 'Statutory taxes', value: taxes ?? 0, color: 'var(--report-chart-teal-5)' },
-  ];
+  const salesSlices: DonutSlice[] = draft.revenueMatrix.rows.map((r, i) => ({
+    label: r.label,
+    value: figureValue(r.netSales) ?? 0,
+    color: SALES_COLORS[i % SALES_COLORS.length],
+  }));
 
   const barCost = figureValue(costing.bar?.total ?? { status: 'needs-data' });
   const kitchenCost = figureValue(costing.kitchen?.total ?? { status: 'needs-data' });
