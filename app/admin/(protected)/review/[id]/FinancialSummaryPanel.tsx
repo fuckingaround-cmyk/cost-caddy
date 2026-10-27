@@ -1,4 +1,5 @@
 import type { FinancialReportDraft } from '@/lib/report/financialDraft';
+import { subtractFigures } from '@/lib/report/figure';
 import { count, money, pct } from '@/lib/report/reportFormat';
 
 // C3 preview — renders C2's buildFinancialReportDraft as a plain reviewer-facing
@@ -7,16 +8,15 @@ import { count, money, pct } from '@/lib/report/reportFormat';
 // /admin/review/[id]/report route.
 
 export function FinancialSummaryPanel({ draft }: { draft: FinancialReportDraft }) {
+  const netSales = subtractFigures(draft.kpis.netSale, draft.kpis.totalDiscounts);
+
   const kpiRows: { label: string; value: string }[] = [
     { label: 'Covers', value: count(draft.kpis.covers) },
-    { label: 'Net Sale', value: money(draft.kpis.netSale) },
+    { label: 'Total Sales', value: money(draft.kpis.netSale) },
     { label: 'Kitchen Sale', value: money(draft.kpis.kitchenSale) },
     { label: 'Bar Sale', value: money(draft.kpis.barSale) },
     { label: 'Total Discounts', value: money(draft.kpis.totalDiscounts) },
-    { label: 'Total Taxes', value: money(draft.kpis.totalTaxes) },
-    { label: 'Total Charges', value: money(draft.kpis.totalCharges) },
-    { label: 'Gross Sale', value: money(draft.kpis.grossSale) },
-    { label: 'APC (Gross)', value: money(draft.kpis.apcGross) },
+    { label: 'Net Sales', value: money(netSales) },
   ];
 
   const matrixRows = [...draft.revenueMatrix.rows, draft.revenueMatrix.total].map((row, i, all) => ({ row, depth: 0, isTotal: i === all.length - 1 }));
@@ -43,7 +43,7 @@ export function FinancialSummaryPanel({ draft }: { draft: FinancialReportDraft }
       ))}
 
       <div style={{ padding: '7px 13px', background: 'var(--surface-alt-1)', fontSize: '10.5px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--muted-2)' }}>
-        Sales &amp; Revenue Matrix — sales − discount = net sales; + taxes + service charge = gross
+        Sales &amp; Revenue Matrix — sales − discount = net sales
       </div>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -53,10 +53,6 @@ export function FinancialSummaryPanel({ draft }: { draft: FinancialReportDraft }
               <th style={{ textAlign: 'right', padding: '8px 13px' }}>Sales</th>
               <th style={{ textAlign: 'right', padding: '8px 13px' }}>Discount</th>
               <th style={{ textAlign: 'right', padding: '8px 13px' }}>Net Sales</th>
-              <th style={{ textAlign: 'right', padding: '8px 13px' }}>Taxes</th>
-              <th style={{ textAlign: 'right', padding: '8px 13px' }}>Service Charge</th>
-              <th style={{ textAlign: 'right', padding: '8px 13px' }}>Gross Sale</th>
-              <th style={{ textAlign: 'right', padding: '8px 13px' }}>APC</th>
             </tr>
           </thead>
           <tbody>
@@ -66,10 +62,6 @@ export function FinancialSummaryPanel({ draft }: { draft: FinancialReportDraft }
                 <td style={{ textAlign: 'right', padding: '8px 13px' }}>{money(r.sales)}</td>
                 <td style={{ textAlign: 'right', padding: '8px 13px' }}>{money(r.discount)}</td>
                 <td style={{ textAlign: 'right', padding: '8px 13px' }}>{money(r.netSales)}</td>
-                <td style={{ textAlign: 'right', padding: '8px 13px' }}>{money(r.taxes)}</td>
-                <td style={{ textAlign: 'right', padding: '8px 13px' }}>{money(r.serviceCharge)}</td>
-                <td style={{ textAlign: 'right', padding: '8px 13px' }}>{money(r.grossSale)}</td>
-                <td style={{ textAlign: 'right', padding: '8px 13px' }}>{money(r.apc)}</td>
               </tr>
             ))}
           </tbody>

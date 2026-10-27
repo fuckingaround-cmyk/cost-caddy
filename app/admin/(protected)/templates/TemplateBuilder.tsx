@@ -21,7 +21,6 @@ type BuilderMetric = {
   label: string;
   unit: 'currency' | 'count' | 'number' | 'percent';
   catKey: MetricCatKey;
-  kind: 'tax' | 'charge';
   revGroup: 'kitchen' | 'bar';
   den: string;
 };
@@ -33,7 +32,6 @@ function catForMetric(m: { section: string; revGroup?: string | null; costGroup?
   if (m.section === 'covers') return 'covers';
   if (m.section === 'sales') return 'sales';
   if (m.section === 'discount') return 'discounts';
-  if (m.section === 'tax') return 'taxes';
   if (m.costGroup === 'bar') return 'barCost';
   if (m.costGroup === 'kitchen') return 'kitchenCost';
   return 'ncCost';
@@ -42,15 +40,16 @@ function catForMetric(m: { section: string; revGroup?: string | null; costGroup?
 export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
   const [name, setName] = useState(initial.name);
   const [metrics, setMetrics] = useState<BuilderMetric[]>(
-    initial.metrics.map((m) => ({
-      key: m.metricKey,
-      label: m.label,
-      unit: m.unit ?? 'currency',
-      catKey: catForMetric(m),
-      kind: m.kind === 'charge' ? 'charge' : 'tax',
-      revGroup: m.revGroup === 'bar' ? 'bar' : 'kitchen',
-      den: m.den ?? '',
-    })),
+    initial.metrics
+      .filter((m) => m.section !== 'tax')
+      .map((m) => ({
+        key: m.metricKey,
+        label: m.label,
+        unit: m.unit ?? 'currency',
+        catKey: catForMetric(m),
+        revGroup: m.revGroup === 'bar' ? 'bar' : 'kitchen',
+        den: m.den ?? '',
+      })),
   );
   const [departments, setDepartments] = useState<BuilderDept[]>(
     initial.departments.length > 0
@@ -70,7 +69,7 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
   const [pending, startTransition] = useTransition();
 
   const addMetric = (catKey: MetricCatKey) => {
-    setMetrics((ms) => [...ms, { key: newId('m'), label: '', unit: 'currency', catKey, kind: 'tax', revGroup: 'kitchen', den: '' }]);
+    setMetrics((ms) => [...ms, { key: newId('m'), label: '', unit: 'currency', catKey, revGroup: 'kitchen', den: '' }]);
   };
   const updateMetric = (key: string, patch: Partial<BuilderMetric>) =>
     setMetrics((ms) => ms.map((m) => (m.key === key ? { ...m, ...patch } : m)));
@@ -273,21 +272,6 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
                             ))}
                           </select>
                         </label>
-                      )}
-                      {cat.key === 'taxes' && (
-                        <div style={{ display: 'flex', gap: 14, paddingLeft: 2 }}>
-                          {(['tax', 'charge'] as const).map((k) => (
-                            <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--ink-2)', cursor: 'pointer' }}>
-                              <input
-                                type="radio"
-                                name={`kind_${m.key}`}
-                                checked={m.kind === k}
-                                onChange={() => updateMetric(m.key, { kind: k })}
-                              />
-                              {k === 'tax' ? 'Statutory tax' : 'Service charge'}
-                            </label>
-                          ))}
-                        </div>
                       )}
                       {cat.key === 'sales' && (
                         <div style={{ display: 'flex', gap: 14, paddingLeft: 2 }}>

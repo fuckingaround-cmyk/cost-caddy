@@ -1,17 +1,17 @@
 import type { FinancialDraftKpis } from '@/lib/report/financialDraft';
-import { divideFigures, type ReportFigure } from '@/lib/report/figure';
+import { subtractFigures } from '@/lib/report/figure';
 import { count, moneyShort } from '@/lib/report/reportFormat';
 
 // Report v4 §1's KPI strip (Audit report v4.dc.html ~line 78-150): a card per figure,
-// big mono number over an uppercase label, with a APC sub-figure on sales cards.
+// big mono number over an uppercase label.
 export function KpiStrip({ kpis }: { kpis: FinancialDraftKpis }) {
-  const apc = (f: ReportFigure) => moneyShort(divideFigures(f, kpis.covers));
+  const netSales = subtractFigures(kpis.netSale, kpis.totalDiscounts);
 
   const cards = [
-    { label: 'Total Pax (Covers)', value: count(kpis.covers), sub: null },
-    { label: 'Gross Sale', value: moneyShort(kpis.grossSale), sub: apc(kpis.grossSale), highlight: true },
-    { label: 'Total Discount', value: moneyShort(kpis.totalDiscounts), sub: apc(kpis.totalDiscounts), financial: true },
-    { label: 'Net Sale (Ex-Tax)', value: moneyShort(kpis.netSale), sub: apc(kpis.netSale), highlight: true, last: true },
+    { label: 'Total Pax (Covers)', value: count(kpis.covers) },
+    { label: 'Total Sales', value: moneyShort(kpis.netSale), highlight: true },
+    { label: 'Discount', value: moneyShort(kpis.totalDiscounts), financial: true },
+    { label: 'Net Sales', value: moneyShort(netSales), highlight: true, last: true },
   ];
 
   return (
@@ -61,12 +61,6 @@ export function KpiStrip({ kpis }: { kpis: FinancialDraftKpis }) {
           >
             {c.value}
           </div>
-          {c.sub && (
-            <div style={{ marginTop: 'auto', paddingTop: 6, borderTop: '1px solid var(--r-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 10, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--r-muted)' }}>APC</span>
-              <span style={{ fontFamily: 'var(--font-report-mono)', fontSize: 12.5, fontWeight: 700, color: c.last ? 'var(--navy-700)' : 'var(--r-ink)' }}>{c.sub}</span>
-            </div>
-          )}
         </div>
       ))}
     </div>

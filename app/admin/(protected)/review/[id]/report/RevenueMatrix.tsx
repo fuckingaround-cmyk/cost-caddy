@@ -14,21 +14,17 @@ export function RevenueMatrix({ draft }: { draft: FinancialReportDraft }) {
           Sales &amp; Per-Customer Revenue Matrix
         </h3>
         <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--r-ink-2)' }}>
-          Sales − discount = net sales; + taxes + service charge = gross sale. Taxes and service charge allocated pro-rata on net sales; APC on covers.
+          Sales − discount = net sales.
         </p>
       </div>
       <div>
         <table data-matrix="" style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'left', fontSize: 12 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--r-border-2)', fontSize: 11, fontWeight: 600, color: 'var(--r-ink)', background: '#fff' }}>
-              <th style={{ width: '16%', padding: '10px 12px 10px 16px', fontWeight: 600 }}>Category</th>
-              <th style={{ width: '12%', padding: '10px 12px', textAlign: 'right', fontWeight: 600 }}>Sales Before Taxes</th>
-              <th style={{ width: '12%', padding: '10px 12px', textAlign: 'right', fontWeight: 600 }}>Discount</th>
-              <th style={{ width: '12%', padding: '10px 12px', textAlign: 'right', fontWeight: 600 }}>Net Sales</th>
-              <th style={{ width: '12%', padding: '10px 12px', textAlign: 'right', fontWeight: 600 }}>Taxes</th>
-              <th style={{ width: '12%', padding: '10px 12px', textAlign: 'right', fontWeight: 600 }}>Service Charge</th>
-              <th style={{ width: '12%', padding: '10px 12px', textAlign: 'right', fontWeight: 600 }}>Gross Sale</th>
-              <th style={{ width: '12%', padding: '10px 16px 10px 12px', textAlign: 'right', fontWeight: 600, background: 'var(--r-surface-alt-1)' }}>APC</th>
+              <th style={{ width: '28%', padding: '10px 12px 10px 16px', fontWeight: 600 }}>Category</th>
+              <th style={{ width: '24%', padding: '10px 12px', textAlign: 'right', fontWeight: 600 }}>Total Sales</th>
+              <th style={{ width: '24%', padding: '10px 12px', textAlign: 'right', fontWeight: 600 }}>Discount</th>
+              <th style={{ width: '24%', padding: '10px 16px 10px 12px', textAlign: 'right', fontWeight: 600 }}>Net Sales</th>
             </tr>
           </thead>
           <tbody>
@@ -46,8 +42,8 @@ export function RevenueMatrix({ draft }: { draft: FinancialReportDraft }) {
                   <td style={{ padding: isTotal ? '14px 12px 14px 16px' : depth ? '8px 12px 8px 32px' : '12px 12px 12px 16px', fontWeight: depth ? 400 : 600, color: depth ? 'var(--r-ink-2)' : 'var(--r-ink)', textTransform: isTotal ? 'uppercase' : 'none', letterSpacing: isTotal ? '0.05em' : 'normal' }}>
                     {r.label}
                   </td>
-                  {([r.sales, r.discount, r.netSales, r.taxes, r.serviceCharge, r.grossSale] as const).map((f, j) => (
-                    <td key={j} style={{ padding: isTotal ? '14px 12px' : depth ? '8px 12px' : '12px', textAlign: 'right', fontFamily: 'var(--font-report-mono)', fontSize: isTotal ? 13 : 12, color: j === 5 ? 'var(--navy-700)' : depth ? 'var(--r-ink-2)' : 'var(--r-ink)' }}>
+                  {([r.sales, r.discount] as const).map((f, j) => (
+                    <td key={j} style={{ padding: isTotal ? '14px 12px' : depth ? '8px 12px' : '12px', textAlign: 'right', fontFamily: 'var(--font-report-mono)', fontSize: isTotal ? 13 : 12, color: depth ? 'var(--r-ink-2)' : 'var(--r-ink)' }}>
                       {money(f)}
                     </td>
                   ))}
@@ -58,11 +54,10 @@ export function RevenueMatrix({ draft }: { draft: FinancialReportDraft }) {
                       fontFamily: 'var(--font-report-mono)',
                       fontWeight: 700,
                       color: 'var(--navy-700)',
-                      background: isTotal ? 'var(--r-border-2)' : 'var(--r-surface-alt-1)',
                       fontSize: isTotal ? 14 : 12.5,
                     }}
                   >
-                    {money(r.apc)}
+                    {money(r.netSales)}
                   </td>
                 </tr>
               );

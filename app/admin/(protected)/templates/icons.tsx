@@ -23,12 +23,6 @@ const CAT_ICON_PATHS: Record<MetricCatKey, React.ReactNode> = {
       <circle cx="8" cy="8" r="1.4" />
     </>
   ),
-  taxes: (
-    <>
-      <path d="M5 3h11l3 3v15l-2.5-1.5L14 21l-2.5-1.5L9 21l-2.5-1.5L5 21z" />
-      <path d="M8 8h7M8 12h7M8 16h4" />
-    </>
-  ),
   barCost: (
     <>
       <path d="M4 4h16l-8 8z" />

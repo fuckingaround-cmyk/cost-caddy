@@ -3,7 +3,7 @@ import type { TemplateMetricInput } from '@/lib/queries/templates';
 // Ported verbatim from Super Admin Flow.dc.html's METRIC_CATS (A4, Part 1 — Metrics).
 // Each category pre-wires the fixed section/revGroup/kind/costGroup fields; the auditor
 // only ever types a label, a unit, and (for cost rows) picks a denominator.
-export type MetricCatKey = 'covers' | 'sales' | 'discounts' | 'taxes' | 'barCost' | 'kitchenCost' | 'ncCost';
+export type MetricCatKey = 'covers' | 'sales' | 'discounts' | 'barCost' | 'kitchenCost' | 'ncCost';
 
 export interface MetricCat {
   key: MetricCatKey;
@@ -46,15 +46,6 @@ export const METRIC_CATS: MetricCat[] = [
     after: [],
   },
   {
-    key: 'taxes',
-    title: 'Taxes',
-    hint: 'Service charge and statutory taxes',
-    fields: { section: 'tax', kind: 'tax' },
-    match: (m) => m.section === 'tax',
-    derived: [{ label: 'Total Taxes', badge: 'Sum of all taxes' }],
-    after: [{ label: 'Total Gross Sale', badge: 'Net sales − discounts + taxes' }],
-  },
-  {
     key: 'barCost',
     title: 'Bar Cost',
     hint: 'Costed against bar revenue',
@@ -91,24 +82,19 @@ export const METRIC_CATS: MetricCat[] = [
 
 // Builds a metric's save payload from its category defaults, except two fields a row can
 // override the category default for:
-// - `kind` on a 'taxes' row (BUG-020) — every tax-category metric silently saved as
-//   kind:'tax' (no builder UI ever emitted 'charge'), so a Service Charge metric got
-//   summed into totalTaxes instead of totalCharges (lib/calc/metrics.ts), and the report
-//   showed "Needs data" for service charge while double-counting it into the tax total.
 // - `revGroup` on a 'sales' row (BUG-021) — every sales-category metric silently saved as
 //   revGroup:'kitchen' (no builder UI ever emitted 'bar'), so Bar Sale (and the report's
 //   Bar revenue-matrix row) was always null/"Needs data" — every sales metric, Beverage
 //   and Liquor included, was summed into kitchenSale instead.
-// The row's own selection wins for both. A cost row's `den` (its % denominator) also wins
-// over the category default — before this, every Bar Cost row was forced to 'bar', so Liquor
-// Cost was divided by liquor + beverage sale instead of liquor sale alone.
+// - `den` on a cost row (its % denominator) also wins over the category default — before
+//   this, every Bar Cost row was forced to 'bar', so Liquor Cost was divided by liquor +
+//   beverage sale instead of liquor sale alone.
 export function toMetricInput(
   m: {
     key: string;
     label: string;
     unit: TemplateMetricInput['unit'];
     catKey: MetricCatKey;
-    kind: 'tax' | 'charge';
     revGroup: 'kitchen' | 'bar';
     den?: string;
   },
@@ -119,7 +105,7 @@ export function toMetricInput(
     label: m.label,
     section: cat.fields.section,
     revGroup: cat.key === 'sales' ? m.revGroup : (cat.fields.revGroup ?? null),
-    kind: cat.key === 'taxes' ? m.kind : (cat.fields.kind ?? null),
+    kind: cat.fields.kind ?? null,
     costGroup: cat.fields.costGroup ?? null,
     den: cat.hasDen ? (m.den || cat.defaultDen || null) : null,
     unit: m.unit,
