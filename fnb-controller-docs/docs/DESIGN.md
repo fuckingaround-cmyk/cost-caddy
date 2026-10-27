@@ -558,3 +558,12 @@ only ever the AI-polished remark; if the submit-time job hasn't polished a point
 than the auditor's raw wording. The summary ribbon is Failed / High / Medium / Low (no Passed count).
 **Why:** the client wants the report to be actionable findings, not a checklist echo, and never to see
 field shorthand. Only Fail points are sent to OpenAI at submit. Supersedes the 7-column order in Report v4. See ADR-0019.
+
+### UX-035 — Report ₹ figures always show 2 decimal places (client feedback, 2026-10-27)
+**Decision:** `formatINR` (the single full-precision ₹ formatter, `lib/calc/currency.ts`) now always renders
+two decimal places (₹2,47,975.00), matching the decimal precision `formatINRShort` (₹4.80L) and the report's
+`pct` formatter already used. All report surfaces built on `money`/`moneyShort` (CostingTable, RevenueMatrix,
+FinancialSummaryPanel, KpiStrip, MtdReportBody, ReportBody) pick this up automatically since they delegate to
+the one formatter. Counts stay whole numbers — they're discrete items, not currency/percentage figures.
+**Why:** client wants consistent decimal-accuracy across every figure in the report rather than whole-rupee
+amounts sitting next to 2-decimal percentages and short-scale totals.
