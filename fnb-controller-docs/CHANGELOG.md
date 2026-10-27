@@ -6,6 +6,7 @@ and DESIGN Part B). One dated line per shipped thing.
 ## Foundations — 2026
 
 ### 2026-10-15
+- Added: the POS Discount report's findings now end with the number of bills above the 10% threshold and their total discount amount (e.g. "In total, 13 bills carried discounts above the 10% threshold, amounting to ₹X."), summed in code from the extracted table, never by the AI.
 - Fixed: POS register tables no longer shift columns when a photo has a column we didn't expect (e.g. KOT NO) or a blank cell — tables now use the photo's own columns and rows are kept aligned; each row is read keyed by header so a dropped cell can't shift the rest, and register photos are now read with gpt-5-mini (ADR-0020).
 - Changed: the report's compliance section now lists failed checkpoints only (no Pass/N/A rows), with columns Checkpoint, Observation, Risk Severity, Operational Impact, Corrective Action, SLA, Evidence (UX-034, ADR-0019).
 - Changed: report observations show only the AI-polished text (never the auditor's raw remark), and only Fail remarks are sent to OpenAI at submit (ADR-0019).

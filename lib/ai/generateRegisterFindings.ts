@@ -4,6 +4,7 @@ import { and, eq, isNotNull } from 'drizzle-orm';
 import { db } from '@/db';
 import { auditEvidenceFindings, auditItemFiles, auditItems } from '@/db/schema';
 import { EVIDENCE_FINDINGS_POLICY_CONTEXT } from './evidenceFindingsPolicyContext';
+import { withDiscountTotals } from '@/lib/evidence/discountSummary';
 import { withTimeout } from './withTimeout';
 
 const GeneratedSchema = z.object({ findings: z.string(), correctiveMeasures: z.string() });
@@ -106,7 +107,7 @@ export async function generateRegisterFindingsForItem(itemId: string): Promise<{
   const generated = await withTimeout(
     callOpenAI({ report: item.label, status: item.status, auditorRemark: item.remark, tables }),
     GENERATE_TIMEOUT_MS,
-  );
+  ).then((g) => ({ ...g, findings: withDiscountTotals(g.findings, item.reportType!, tables) }));
 
   await db
     .insert(auditEvidenceFindings)

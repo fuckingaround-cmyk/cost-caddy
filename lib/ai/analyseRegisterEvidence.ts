@@ -10,6 +10,7 @@ import { EVIDENCE_FINDINGS_POLICY_CONTEXT } from './evidenceFindingsPolicyContex
 import { REGISTER_FINDINGS_RULES, generateRegisterFindingsForItem } from './generateRegisterFindings';
 import { tableFromKeyedRows } from '@/lib/evidence/normaliseTable';
 import type { ExtractedTableShape } from '@/lib/evidence/normaliseTable';
+import { withDiscountTotals } from '@/lib/evidence/discountSummary';
 import { withTimeout } from './withTimeout';
 
 // The model returns each row as an object keyed by the photo's own headers (ADR-0020) so a
@@ -176,6 +177,7 @@ export async function analyseRegisterItem(itemId: string, opts: { keepExistingFi
   }
 
   const reportLabel = posFindingsKey(item.reportType, item.label);
+  result = { ...result, findings: withDiscountTotals(result.findings, item.reportType, result.tables) };
   if (opts.keepExistingFindings) {
     const [existing] = await db
       .select({ findings: auditEvidenceFindings.findings })
