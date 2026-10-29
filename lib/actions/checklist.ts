@@ -145,7 +145,7 @@ export async function submitAudit(auditId: string): Promise<void> {
 
   const valueByKey = new Map(values.map((v) => [v.metricKey, v.value]));
   const mtdComplete = defs.every((d) => parseMetricValue(valueByKey.get(d.metricKey)) !== null);
-  const checklistComplete = items.length > 0 && items.every(isItemAnswered);
+  const checklistComplete = items.every(isItemAnswered);
   if (!mtdComplete || !checklistComplete) {
     throw new Error('This audit is not complete yet.');
   }

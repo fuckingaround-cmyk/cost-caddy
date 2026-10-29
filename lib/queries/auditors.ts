@@ -7,7 +7,7 @@ export type AuditorRow = {
   name: string;
   email: string;
   phone: string | null;
-  status: 'active' | 'suspended';
+  status: 'active' | 'suspended' | 'removed';
   lastActiveAt: Date | null;
   outletIds: string[];
   outletNames: string[];

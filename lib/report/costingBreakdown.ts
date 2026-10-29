@@ -68,3 +68,19 @@ export function buildCostingBreakdown(defs: MetricDef[], values: MetricValues | 
     netFnbTotalPct: percentFigure(netFnbCost, netSale),
   };
 }
+
+// Section 1's Cost Composition donut — every bar + kitchen line item (Beverage, Liquor,
+// Food, Staff Food, …, as the template defines them) plus the non-commercial adjustment,
+// each its own slice, rather than collapsed to the three group totals.
+export interface CostCompositionSlice {
+  label: string;
+  value: ReportFigure;
+}
+
+export function buildCostCompositionSlices(breakdown: CostingBreakdown): CostCompositionSlice[] {
+  return [
+    ...(breakdown.bar?.items ?? []),
+    ...(breakdown.kitchen?.items ?? []),
+    ...breakdown.nonCommercial.map((item) => ({ ...item, label: `${item.label} (Non-commercial)` })),
+  ].map((item) => ({ label: item.label, value: item.value }));
+}

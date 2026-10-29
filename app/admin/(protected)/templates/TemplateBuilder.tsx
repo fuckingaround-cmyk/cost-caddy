@@ -22,8 +22,14 @@ type BuilderMetric = {
   unit: 'currency' | 'count' | 'number' | 'percent';
   catKey: MetricCatKey;
   revGroup: 'kitchen' | 'bar';
+  revGroupTouched: boolean;
   den: string;
 };
+
+// Suggests Bar revenue for sales rows named after bar-style items (Liquor Sale, Beverage
+// Sale, …) so a template doesn't silently end up with an untagged Bar Sale (BUG-021) —
+// admins can still override via the radio, which then stops this suggestion from applying.
+const BAR_SALES_LABEL = /liquor|beer|beverage|wine|spirit|cocktail|\bbar\b/i;
 
 type BuilderPoint = { id: string; label: string; guidance: string; freeform: boolean };
 type BuilderDept = { cid: string; cat: string; code: string; points: BuilderPoint[] };
@@ -48,6 +54,7 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
         unit: m.unit ?? 'currency',
         catKey: catForMetric(m),
         revGroup: m.revGroup === 'bar' ? 'bar' : 'kitchen',
+        revGroupTouched: true,
         den: m.den ?? '',
       })),
   );
@@ -69,10 +76,21 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
   const [pending, startTransition] = useTransition();
 
   const addMetric = (catKey: MetricCatKey) => {
-    setMetrics((ms) => [...ms, { key: newId('m'), label: '', unit: 'currency', catKey, revGroup: 'kitchen', den: '' }]);
+    setMetrics((ms) => [
+      ...ms,
+      { key: newId('m'), label: '', unit: 'currency', catKey, revGroup: 'kitchen', revGroupTouched: false, den: '' },
+    ]);
   };
   const updateMetric = (key: string, patch: Partial<BuilderMetric>) =>
     setMetrics((ms) => ms.map((m) => (m.key === key ? { ...m, ...patch } : m)));
+  const updateMetricLabel = (key: string, label: string) =>
+    setMetrics((ms) =>
+      ms.map((m) =>
+        m.key === key
+          ? { ...m, label, revGroup: m.revGroupTouched ? m.revGroup : BAR_SALES_LABEL.test(label) ? 'bar' : 'kitchen' }
+          : m,
+      ),
+    );
   const removeMetric = (key: string) => setMetrics((ms) => ms.filter((m) => m.key !== key));
 
   const addDept = () => {
@@ -233,7 +251,9 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
                       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                         <input
                           value={m.label}
-                          onChange={(e) => updateMetric(m.key, { label: e.target.value })}
+                          onChange={(e) =>
+                            cat.key === 'sales' ? updateMetricLabel(m.key, e.target.value) : updateMetric(m.key, { label: e.target.value })
+                          }
                           placeholder="Metric name"
                           style={{ flex: 1, minWidth: 0, padding: '9px 12px', border: '1px solid var(--border-dashed)', borderRadius: 'var(--radius-card)', fontSize: 13, fontWeight: 500 }}
                         />
@@ -281,7 +301,7 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
                                 type="radio"
                                 name={`revGroup_${m.key}`}
                                 checked={m.revGroup === g}
-                                onChange={() => updateMetric(m.key, { revGroup: g })}
+                                onChange={() => updateMetric(m.key, { revGroup: g, revGroupTouched: true })}
                               />
                               {g === 'kitchen' ? 'Kitchen revenue' : 'Bar revenue'}
                             </label>

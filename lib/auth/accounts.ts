@@ -70,8 +70,8 @@ export async function forceSignOut(userId: string): Promise<void> {
   await endAllSessions(userId);
 }
 
-export async function setAuditorStatus(userId: string, status: 'active' | 'suspended'): Promise<void> {
+export async function setAuditorStatus(userId: string, status: 'active' | 'suspended' | 'removed'): Promise<void> {
   await db.update(users).set({ status }).where(eq(users.id, userId));
-  // A suspended auditor is signed out everywhere, not just refused on next login.
-  if (status === 'suspended') await endAllSessions(userId);
+  // A suspended/removed auditor is signed out everywhere, not just refused on next login.
+  if (status !== 'active') await endAllSessions(userId);
 }

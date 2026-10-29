@@ -6,7 +6,7 @@ import { EVIDENCE_PHOTO_TYPES } from '@/lib/evidence/types';
 // role still appears here so authorization checks have one vocabulary.
 export const roleEnum = pgEnum('role', ['super_admin', 'auditor', 'outlet']);
 
-export const activeStatusEnum = pgEnum('active_status', ['active', 'suspended']);
+export const activeStatusEnum = pgEnum('active_status', ['active', 'suspended', 'removed']);
 
 export const metricSectionEnum = pgEnum('metric_section', [
   'covers',

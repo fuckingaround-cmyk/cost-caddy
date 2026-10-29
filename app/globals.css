@@ -54,7 +54,7 @@ a {
   /* Compact print: the screen layout is designed for ~1420px but a landscape Letter page is
      ~980px wide, so px sizes read ~45% too big. Zoom the report down and tighten page 1. */
   [data-report-main] {
-    zoom: 0.78;
+    zoom: 0.72;
   }
   [data-report-title] {
     font-size: 30px !important;
@@ -71,7 +71,7 @@ a {
     padding-bottom: 7px !important;
   }
   [data-gap] {
-    margin-bottom: 16px !important;
+    margin-bottom: 8px !important;
   }
   [data-pos-table] th,
   [data-pos-table] td {

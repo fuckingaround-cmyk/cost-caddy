@@ -8,7 +8,7 @@ export function RevenueMatrix({ draft }: { draft: FinancialReportDraft }) {
   const rows = [...draft.revenueMatrix.rows, draft.revenueMatrix.total].map((row, i, all) => ({ row, depth: 0, isTotal: i === all.length - 1 }));
 
   return (
-    <div data-avoid="" data-gap="" style={{ border: '1px solid var(--r-border)', borderRadius: 10, overflow: 'hidden', background: '#fff', boxShadow: 'var(--shadow-card)', marginBottom: 24 }}>
+    <div data-avoid="" data-gap="" style={{ border: '1px solid var(--r-border)', borderRadius: 10, overflow: 'hidden', background: '#fff', boxShadow: 'var(--shadow-card)' }}>
       <div style={{ background: 'var(--navy-050)', borderBottom: '1px solid var(--r-border)', padding: '12px 16px' }}>
         <h3 style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--navy-700)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Sales &amp; Per-Customer Revenue Matrix
@@ -21,10 +21,10 @@ export function RevenueMatrix({ draft }: { draft: FinancialReportDraft }) {
         <table data-matrix="" style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'left', fontSize: 12 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--r-border-2)', fontSize: 11, fontWeight: 600, color: 'var(--r-ink)', background: '#fff' }}>
-              <th style={{ width: '28%', padding: '10px 12px 10px 16px', fontWeight: 600 }}>Category</th>
-              <th style={{ width: '24%', padding: '10px 12px', textAlign: 'right', fontWeight: 600 }}>Total Sales</th>
-              <th style={{ width: '24%', padding: '10px 12px', textAlign: 'right', fontWeight: 600 }}>Discount</th>
-              <th style={{ width: '24%', padding: '10px 16px 10px 12px', textAlign: 'right', fontWeight: 600 }}>Net Sales</th>
+              <th style={{ width: '22%', padding: '10px 8px 10px 16px', fontWeight: 600 }}>Category</th>
+              <th style={{ width: '26%', padding: '10px 8px', textAlign: 'right', fontWeight: 600 }}>Total Sales</th>
+              <th style={{ width: '26%', padding: '10px 8px', textAlign: 'right', fontWeight: 600 }}>Discount</th>
+              <th style={{ width: '26%', padding: '10px 16px 10px 8px', textAlign: 'right', fontWeight: 600 }}>Net Sales</th>
             </tr>
           </thead>
           <tbody>
@@ -43,13 +43,13 @@ export function RevenueMatrix({ draft }: { draft: FinancialReportDraft }) {
                     {r.label}
                   </td>
                   {([r.sales, r.discount] as const).map((f, j) => (
-                    <td key={j} style={{ padding: isTotal ? '14px 12px' : depth ? '8px 12px' : '12px', textAlign: 'right', fontFamily: 'var(--font-report-mono)', fontSize: isTotal ? 13 : 12, color: depth ? 'var(--r-ink-2)' : 'var(--r-ink)' }}>
+                    <td key={j} style={{ padding: isTotal ? '14px 8px' : depth ? '8px 8px' : '12px 8px', textAlign: 'right', fontFamily: 'var(--font-report-mono)', fontSize: isTotal ? 13 : 12, color: depth ? 'var(--r-ink-2)' : 'var(--r-ink)' }}>
                       {money(f)}
                     </td>
                   ))}
                   <td
                     style={{
-                      padding: isTotal ? '14px 16px 14px 12px' : depth ? '8px 16px 8px 12px' : '12px 16px 12px 12px',
+                      padding: isTotal ? '14px 16px 14px 8px' : depth ? '8px 16px 8px 8px' : '12px 16px 12px 8px',
                       textAlign: 'right',
                       fontFamily: 'var(--font-report-mono)',
                       fontWeight: 700,

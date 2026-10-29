@@ -5,6 +5,15 @@ and DESIGN Part B). One dated line per shipped thing.
 
 ## Foundations — 2026
 
+### 2026-10-29
+- Fixed: evidence photo thumbnails in the report's compliance matrix are now real links (`<a href>`), not buttons, so they survive into any PDF export as clickable link annotations — previously only the Playwright-rendered publish PDF had working links, and the live page's thumbnails were inert once printed (BUG-033).
+- Added: a "Download PDF" button on the report page for both drafts and published audits — drafts render on demand via the same Playwright pipeline (nothing stored or versioned), published audits download the actual stored, version-stamped PDF. Previously there was no way to retrieve the real generated PDF at all; "Print / PDF Preview" (now removed) only triggered the browser's own unreliable print-to-PDF.
+- Fixed: removing an auditor now sets a distinct "removed" status instead of reusing "suspended" — their email/password stop working exactly as before, but the Auditors list now shows "REMOVED" with no Reactivate control, instead of looking identical to a plain suspend (BUG-032).
+
+### 2026-10-27
+- Changed: Section 1B of the per-audit report is now a 3-panel row — Cost Composition donut, a flat Direct Cost by Category table, and a Cost vs. Sales by Category bar panel — replacing the single grouped A/B cost table (UX-036).
+- Fixed: POS register findings (discount register and others) no longer cite a hardcoded "10% discount threshold" — the findings prompt now leads with the auditor's own remark and only cites a threshold or figure the remark (or table rows) actually states; the deterministic bills-total sentence no longer filters or labels by a fixed percentage (BUG-031).
+
 ### 2026-10-15
 - Added: the POS Discount report's findings now end with the number of bills above the 10% threshold and their total discount amount (e.g. "In total, 13 bills carried discounts above the 10% threshold, amounting to ₹X."), summed in code from the extracted table, never by the AI.
 - Fixed: POS register tables no longer shift columns when a photo has a column we didn't expect (e.g. KOT NO) or a blank cell — tables now use the photo's own columns and rows are kept aligned; each row is read keyed by header so a dropped cell can't shift the rest, and register photos are now read with gpt-5-mini (ADR-0020).

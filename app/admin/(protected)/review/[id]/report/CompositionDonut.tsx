@@ -30,7 +30,7 @@ export function CompositionDonut({ title, totalLabel, slices }: { title: string;
         <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--navy-700)' }}>{title}</h3>
         <span style={{ fontFamily: 'var(--font-report-mono)', fontSize: 12, color: 'var(--r-ink-2)' }}>{totalLabel}</span>
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 20 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
         <div style={{ position: 'relative', flex: 'none', width: 170, height: 170 }}>
           <svg viewBox="0 0 180 180" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
             {total <= 0 ? (
@@ -57,7 +57,7 @@ export function CompositionDonut({ title, totalLabel, slices }: { title: string;
             <span style={{ fontFamily: 'var(--font-report-mono)', fontSize: 14, fontWeight: 700, color: 'var(--navy-700)' }}>{totalLabel}</span>
           </div>
         </div>
-        <div style={{ flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ width: '100%', maxWidth: 220, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {total <= 0 ? (
             <div style={{ fontSize: 12, color: 'var(--r-muted)' }}>Needs data</div>
           ) : (

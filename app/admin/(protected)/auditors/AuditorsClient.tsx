@@ -114,6 +114,7 @@ export function AuditorsClient({
           .join('')
           .toUpperCase();
         const active = u.status === 'active';
+        const removed = u.status === 'removed';
 
         return (
           <div key={u.id} style={{ borderBottom: '1px solid var(--divider)' }}>
@@ -150,7 +151,7 @@ export function AuditorsClient({
                       border: `1px solid ${active ? 'var(--navy-border)' : '#e6c9c9'}`,
                     }}
                   >
-                    {active ? 'ACTIVE' : 'SUSPENDED'}
+                    {active ? 'ACTIVE' : removed ? 'REMOVED' : 'SUSPENDED'}
                   </span>
                 </div>
                 <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 3 }}>
@@ -227,41 +228,47 @@ export function AuditorsClient({
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                  <div style={{ border: '1px solid var(--divider)', borderRadius: 'var(--radius-card)', padding: 16, background: 'var(--surface-alt-2)' }}>
-                    <div style={{ fontSize: 11, color: 'var(--muted-2)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
-                      Access
+                  {!removed && (
+                    <div style={{ border: '1px solid var(--divider)', borderRadius: 'var(--radius-card)', padding: 16, background: 'var(--surface-alt-2)' }}>
+                      <div style={{ fontSize: 11, color: 'var(--muted-2)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
+                        Access
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <Button
+                          variant="secondary"
+                          onClick={() =>
+                            startTransition(async () => {
+                              await setAuditorStatus(u.id, active ? 'suspended' : 'active');
+                              showFlash(`${u.name} ${active ? 'suspended' : 'reactivated'}`);
+                            })
+                          }
+                        >
+                          {active ? 'Suspend' : 'Reactivate'}
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          onClick={() =>
+                            startTransition(async () => {
+                              await forceSignOutAuditor(u.id);
+                              showFlash(`${u.name} signed out everywhere`);
+                            })
+                          }
+                        >
+                          Force sign-out
+                        </Button>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <Button
-                        variant="secondary"
-                        onClick={() =>
-                          startTransition(async () => {
-                            await setAuditorStatus(u.id, active ? 'suspended' : 'active');
-                            showFlash(`${u.name} ${active ? 'suspended' : 'reactivated'}`);
-                          })
-                        }
-                      >
-                        {active ? 'Suspend' : 'Reactivate'}
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={() =>
-                          startTransition(async () => {
-                            await forceSignOutAuditor(u.id);
-                            showFlash(`${u.name} signed out everywhere`);
-                          })
-                        }
-                      >
-                        Force sign-out
-                      </Button>
-                    </div>
-                  </div>
+                  )}
 
                   <div style={{ border: '1px solid var(--divider)', borderRadius: 'var(--radius-card)', padding: 16, background: 'var(--surface-alt-2)' }}>
                     <div style={{ fontSize: 11, color: 'var(--muted-2)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
                       Remove from platform
                     </div>
-                    {confirmRemoveId !== u.id ? (
+                    {removed ? (
+                      <div style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.55 }}>
+                        Removed. Their login no longer works and cannot be reactivated from here.
+                      </div>
+                    ) : confirmRemoveId !== u.id ? (
                       <div>
                         <div style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.55, marginBottom: 14 }}>
                           Login is revoked immediately. Submitted audits and published reports stay on

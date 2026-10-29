@@ -567,3 +567,29 @@ FinancialSummaryPanel, KpiStrip, MtdReportBody, ReportBody) pick this up automat
 the one formatter. Counts stay whole numbers — they're discrete items, not currency/percentage figures.
 **Why:** client wants consistent decimal-accuracy across every figure in the report rather than whole-rupee
 amounts sitting next to 2-decimal percentages and short-scale totals.
+
+### UX-036 — Section 1B is now a 3-panel Cost Composition / Direct Cost / Cost-vs-Sales row (2026-10-27)
+**Decision:** Section 1B drops the single grouped A/B cost table (`CostingTable`) from the live per-audit
+report and replaces it with a 3-column row: the "Cost Composition" donut (moved down from Section 1, which
+now shows only the Revenue Matrix + Sales Composition donut), a flat "Direct Cost by Category" table
+(`DirectCostTable` — bar + kitchen + non-commercial line items, no A/B grouping, ending in the net F&B
+total), and a "Cost vs. Sales by Category" horizontal-bar panel (`CostVsSalesBars`) showing each line
+item's existing `pct` (cost / that item's own matching revenue denominator) as a bar. No new data or
+computation — both new components read the same `CostingBreakdown` that `CostingTable` already consumed,
+and reuse existing tokens/`CompositionDonut`. `CostingTable.tsx` itself is kept (still used by the MTD
+report, `MtdReportBody.tsx`, which is unchanged) but is no longer rendered by the per-audit `ReportBody`.
+**Why:** client-requested layout. The screenshot's Sales Composition donut also showed Service
+Charge/Statutory Taxes slices, but those were deliberately dropped from every report surface and the
+Template Builder earlier the same day (see CHANGELOG 2026-10-27 entries) — reintroducing them was
+explicitly declined, so this report's Sales Composition donut stays Food/Bar/Liquor only.
+
+### UX-037 — Section 2 is one table with department divider rows, not one card per department (2026-10-29)
+**Decision:** `ComplianceSection`/`DepartmentCard` no longer renders a separate bordered card + header +
+table per department. All departments now share one table with a single header row; each department's
+icon/name appears as a full-width divider row (`colSpan={7}`) inline above its checkpoint rows, inside the
+same `<tbody>`. Column widths, zebra striping, severity chips and evidence thumbnails are unchanged.
+**Why:** client-requested layout — with several departments, repeating the 7-column header and card chrome
+per department added height without adding information; one continuous table reads as a single compliance
+matrix, matching the reference screenshot. **Trade-off:** department rows can no longer be reordered or
+isolated as independent cards (e.g. for per-department pagination); if departments ever need independent
+pagination or collapsing, this would need to be revisited.

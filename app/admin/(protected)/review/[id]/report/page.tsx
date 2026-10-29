@@ -3,7 +3,6 @@ import { requireRole } from '@/lib/auth';
 import { loadReportViewModel } from '@/lib/report/reportViewModel';
 import { formatReportDate } from '@/lib/report/reportFormat';
 import { ReportBody } from './ReportBody';
-import { PrintButton } from './PrintButton';
 
 export default async function ReportDocPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -57,7 +56,21 @@ export default async function ReportDocPage({ params }: { params: Promise<{ id: 
             {vm.audit.outletName}{vm.audit.outletCity ? ` · ${vm.audit.outletCity}` : ''}
           </span>
         </div>
-        <PrintButton />
+        <a
+          href={`/admin/review/${id}/report/pdf`}
+          data-noprint=""
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: 'var(--navy-700)',
+            background: '#fff',
+            padding: '8px 14px',
+            borderRadius: 6,
+            textDecoration: 'none',
+          }}
+        >
+          Download PDF
+        </a>
       </header>
 
       <main

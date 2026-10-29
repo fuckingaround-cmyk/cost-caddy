@@ -7,7 +7,7 @@ import { getSession } from './session';
 export type Role = User['role'];
 
 // Resolves the signed-in user from the session cookie — never a hardcoded name (R6).
-// Returns null for a missing/expired/tampered session, or a suspended account.
+// Returns null for a missing/expired/tampered session, or a suspended/removed account.
 export async function getCurrentUser(): Promise<User | null> {
   const cookieValue = await readSessionCookie();
   if (!cookieValue) return null;
@@ -16,7 +16,7 @@ export async function getCurrentUser(): Promise<User | null> {
   if (!session) return null;
 
   const [user] = await db.select().from(users).where(eq(users.id, session.userId)).limit(1);
-  if (!user || user.status === 'suspended') return null;
+  if (!user || user.status !== 'active') return null;
   return user;
 }
 

@@ -3,7 +3,9 @@ import { moneyShort } from '@/lib/report/reportFormat';
 import { KpiStrip } from './KpiStrip';
 import { RevenueMatrix } from './RevenueMatrix';
 import { CompositionDonut } from './CompositionDonut';
-import { CostingTable, SectionHeading } from './CostingTable';
+import { SectionHeading } from './CostingTable';
+import { DirectCostTable } from './DirectCostTable';
+import { CostVsSalesBars } from './CostVsSalesBars';
 import { ComplianceSection } from './ComplianceSection';
 import { PosReportSection } from './PosReportSection';
 
@@ -35,7 +37,7 @@ export function ReportBody({
 
   return (
     <>
-      <div data-avoid="" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20, paddingBottom: 16 }}>
+      <div data-avoid="" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20, paddingBottom: 8 }}>
         <div>
           <h1 data-report-title="" style={{ margin: 0, fontSize: 44, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.02, color: 'var(--navy-700)' }}>{audit.outletName}</h1>
           {audit.outletCity && (
@@ -70,31 +72,42 @@ export function ReportBody({
           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--r-ink)', marginTop: 2 }}>Audit Period: {audit.periodStart && audit.periodStart !== audit.periodEnd ? `${audit.periodStart} to ${audit.periodEnd}` : audit.periodEnd}</div>
         </div>
       </div>
-      <div data-gap="" style={{ height: 1, background: 'var(--r-border-2)', margin: '8px 0 24px' }} />
+      <div data-gap="" style={{ height: 1, background: 'var(--r-border-2)', margin: '4px 0 12px' }} />
 
-      <section data-gap="" style={{ marginBottom: 40 }}>
+      <section data-gap="" style={{ marginBottom: 20 }}>
         <SectionHeading label="Section 1 · Key Financial & Unit Economic Metrics" />
         <div data-avoid="">
           <KpiStrip kpis={draft.kpis} />
         </div>
-        <RevenueMatrix draft={draft} />
-        {showCharts && (
-          <div data-avoid="" data-gap="" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 24 }}>
+        {showCharts ? (
+          <div data-avoid="" data-gap="" style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1.6fr) minmax(260px, 1fr)', gap: 12, marginBottom: 12 }}>
+            <RevenueMatrix draft={draft} />
             <CompositionDonut
               title="Sales Composition"
               totalLabel={moneyShort({ status: 'ok', value: salesSlices.reduce((sum, s) => sum + s.value, 0) })}
               slices={salesSlices}
             />
-            <CompositionDonut
-              title="Cost Composition"
-              totalLabel={moneyShort({ status: 'ok', value: costSlices.reduce((sum, s) => sum + s.value, 0) })}
-              slices={costSlices}
-            />
+          </div>
+        ) : (
+          <div style={{ marginBottom: 12 }}>
+            <RevenueMatrix draft={draft} />
           </div>
         )}
       </section>
 
-      <CostingTable breakdown={costing} />
+      <section data-avoid="" data-gap="" style={{ marginBottom: 20 }}>
+        <SectionHeading label="Section 1B · Costing & Cost as % of Sales" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 0.9fr) minmax(260px, 1.05fr) minmax(260px, 1.05fr)', gap: 12, alignItems: 'start' }}>
+          <CompositionDonut
+            title="Cost Composition"
+            totalLabel={moneyShort({ status: 'ok', value: costSlices.reduce((sum, s) => sum + s.value, 0) })}
+            slices={costSlices}
+          />
+          <DirectCostTable breakdown={costing} />
+          <CostVsSalesBars breakdown={costing} />
+        </div>
+      </section>
+
       <ComplianceSection departments={departments} showSummaryRibbon={showSummaryRibbon} interactive={interactive} />
       <PosReportSection reports={posReports} />
     </>

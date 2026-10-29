@@ -64,6 +64,8 @@ export function ComplianceSection({
   // false for renderReportPdf.tsx's react-dom/server static render — see EvidenceThumbStatic.
   interactive?: boolean;
 }) {
+  if (departments.length === 0) return null;
+
   const allItems = departments.flatMap((d) => d.items);
   const cTotal = allItems.length;
   const cHigh = allItems.filter((i) => i.severity === 'High').length;
@@ -71,7 +73,7 @@ export function ComplianceSection({
   const cLow = allItems.filter((i) => i.severity === 'Low').length;
 
   return (
-    <section data-gap="" style={{ marginBottom: 32 }}>
+    <section data-gap="" data-break="" style={{ marginBottom: 32 }}>
       <SectionHeading label="Section 2 · Department Checklists & Compliance Matrix" right={`${departments.length} departments · ${cTotal} failed checkpoints`} />
 
       {showSummaryRibbon && (
@@ -94,31 +96,7 @@ export function ComplianceSection({
         </div>
       )}
 
-      {departments.map((dept, i) => (
-        <DepartmentCard key={dept.cat} index={i + 1} dept={dept} interactive={interactive} />
-      ))}
-    </section>
-  );
-}
-
-function RibbonCell({ value, label, color, last }: { value: number; label: string; color: string; last?: boolean }) {
-  return (
-    <div style={{ padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, borderRight: last ? 'none' : '1px solid var(--r-border)' }}>
-      <span style={{ fontSize: 18, fontWeight: 700, fontFamily: 'var(--font-report-mono)', color }}>{value}</span>
-      <span style={{ fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color, fontWeight: 600 }}>{label}</span>
-    </div>
-  );
-}
-
-function DepartmentCard({ index, dept, interactive }: { index: number; dept: Department; interactive: boolean }) {
-  return (
-    <div style={{ border: '1px solid var(--r-border)', borderRadius: 10, overflow: 'hidden', background: '#fff', marginBottom: 24, boxShadow: 'var(--shadow-card)' }}>
-      <div data-avoid="" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', background: 'var(--navy-050)', borderBottom: '1px solid var(--r-border)' }}>
-        <span style={{ fontFamily: 'var(--font-report-icons)', fontSize: 17, lineHeight: 1, color: 'var(--navy-700)' }}>{DEPT_ICON[dept.catCode] ?? 'checklist'}</span>
-        <span style={{ fontFamily: 'var(--font-report-mono)', fontSize: 12, color: 'var(--r-muted)' }}>{index}.</span>
-        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--navy-700)', flex: 1 }}>{dept.cat}</h3>
-      </div>
-      <div>
+      <div style={{ border: '1px solid var(--r-border)', borderRadius: 10, overflow: 'hidden', background: '#fff', boxShadow: 'var(--shadow-card)' }}>
         <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--r-border-2)', fontSize: 10.5, fontWeight: 600, color: 'var(--r-muted)', background: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -132,13 +110,40 @@ function DepartmentCard({ index, dept, interactive }: { index: number; dept: Dep
             </tr>
           </thead>
           <tbody style={{ fontSize: 12 }}>
-            {dept.items.map((item, i) => (
-              <ComplianceRow key={item.id} item={item} zebra={i % 2 === 1} interactive={interactive} />
+            {departments.map((dept) => (
+              <DepartmentRows key={dept.cat} dept={dept} interactive={interactive} />
             ))}
           </tbody>
         </table>
       </div>
+    </section>
+  );
+}
+
+function RibbonCell({ value, label, color, last }: { value: number; label: string; color: string; last?: boolean }) {
+  return (
+    <div style={{ padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, borderRight: last ? 'none' : '1px solid var(--r-border)' }}>
+      <span style={{ fontSize: 18, fontWeight: 700, fontFamily: 'var(--font-report-mono)', color }}>{value}</span>
+      <span style={{ fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color, fontWeight: 600 }}>{label}</span>
     </div>
+  );
+}
+
+function DepartmentRows({ dept, interactive }: { dept: Department; interactive: boolean }) {
+  return (
+    <>
+      <tr data-avoid="">
+        <td colSpan={7} style={{ padding: '8px 16px', background: 'var(--navy-050)', borderTop: '1px solid var(--r-border)', borderBottom: '1px solid var(--r-border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontFamily: 'var(--font-report-icons)', fontSize: 15, lineHeight: 1, color: 'var(--navy-700)' }}>{DEPT_ICON[dept.catCode] ?? 'checklist'}</span>
+            <h3 style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: 'var(--navy-700)' }}>{dept.cat}</h3>
+          </div>
+        </td>
+      </tr>
+      {dept.items.map((item, i) => (
+        <ComplianceRow key={item.id} item={item} zebra={i % 2 === 1} interactive={interactive} />
+      ))}
+    </>
   );
 }
 
@@ -148,9 +153,9 @@ function ComplianceRow({ item, zebra, interactive }: { item: ComplianceItem; zeb
   return (
     <tr style={{ borderBottom: '1px solid var(--r-border)', background: zebra ? 'var(--r-surface-alt-2)' : '#fff' }}>
       <td style={{ padding: '12px 12px 12px 16px', verticalAlign: 'top', color: 'var(--r-ink)' }}>
-        <p style={{ margin: 0, fontWeight: 600, fontSize: 12.5, color: 'var(--r-ink)' }}>{item.label}</p>
+        <p style={{ margin: 0, fontWeight: 600, fontSize: 12.5, color: 'var(--r-ink)', overflowWrap: 'break-word', wordBreak: 'break-word' }}>{item.label}</p>
       </td>
-      <td style={{ padding: 12, verticalAlign: 'top', color: 'var(--r-ink-2)', fontSize: 11.5, lineHeight: 1.5 }}>{item.observation || '—'}</td>
+      <td style={{ padding: 12, verticalAlign: 'top', color: 'var(--r-ink-2)', fontSize: 11.5, lineHeight: 1.5, overflowWrap: 'break-word', wordBreak: 'break-word' }}>{item.observation || '—'}</td>
       <td style={{ padding: '12px 10px', verticalAlign: 'top', textAlign: 'center' }}>
         {item.severity ? (
           <span
@@ -174,8 +179,8 @@ function ComplianceRow({ item, zebra, interactive }: { item: ComplianceItem; zeb
           <span style={{ fontSize: 11, color: 'var(--r-muted)' }}>—</span>
         )}
       </td>
-      <td style={{ padding: 12, verticalAlign: 'top', color: 'var(--r-ink-2)', fontSize: 11, lineHeight: 1.5 }}>{item.impact || '—'}</td>
-      <td style={{ padding: 12, verticalAlign: 'top', color: 'var(--r-ink-2)', fontSize: 11.5, lineHeight: 1.6 }}>{item.correctiveAction || '—'}</td>
+      <td style={{ padding: 12, verticalAlign: 'top', color: 'var(--r-ink-2)', fontSize: 11, lineHeight: 1.5, overflowWrap: 'break-word', wordBreak: 'break-word' }}>{item.impact || '—'}</td>
+      <td style={{ padding: 12, verticalAlign: 'top', color: 'var(--r-ink-2)', fontSize: 11.5, lineHeight: 1.6, overflowWrap: 'break-word', wordBreak: 'break-word' }}>{item.correctiveAction || '—'}</td>
       <td style={{ padding: '12px 10px', verticalAlign: 'top', textAlign: 'center', fontFamily: 'var(--font-report-mono)', fontWeight: 700, color: 'var(--report-sev-high-fg)', fontSize: 11 }}>
         {item.sla || '—'}
       </td>

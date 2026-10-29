@@ -2,7 +2,7 @@ import { getAuditMetricDefs, getAuditMetricValues } from '@/lib/queries/audits';
 import { listOperationalFiles } from '@/lib/queries/review';
 import { parseMetricValue, type MetricDef, type MetricValues } from '@/lib/calc';
 import { buildFinancialReportDraft, type FinancialReportDraft } from './financialDraft';
-import { buildCostingBreakdown, type CostingBreakdown } from './costingBreakdown';
+import { buildCostingBreakdown, buildCostCompositionSlices, type CostingBreakdown } from './costingBreakdown';
 import { figureValue } from './figure';
 import type { DonutSlice } from '@/app/admin/(protected)/review/[id]/report/CompositionDonut';
 
@@ -66,14 +66,12 @@ export async function buildMtdViewModel(contributors: MtdContributor[]): Promise
     color: SALES_COLORS[i % SALES_COLORS.length],
   }));
 
-  const barCost = figureValue(costing.bar?.total ?? { status: 'needs-data' });
-  const kitchenCost = figureValue(costing.kitchen?.total ?? { status: 'needs-data' });
-  const ncCost = figureValue(costing.nonCommercial[0]?.value ?? { status: 'needs-data' });
-  const costSlices: DonutSlice[] = [
-    { label: 'Bar & Cellar cost', value: barCost ?? 0, color: 'var(--report-chart-rust-1)' },
-    { label: 'Kitchen & Production cost', value: kitchenCost ?? 0, color: 'var(--report-chart-rust-2)' },
-    { label: 'Non-commercial cost', value: ncCost ?? 0, color: 'var(--report-chart-rust-4)' },
-  ];
+  const COST_COLORS = ['var(--report-chart-rust-1)', 'var(--report-chart-rust-2)', 'var(--report-chart-rust-3)', 'var(--report-chart-rust-4)', 'var(--report-chart-teal-1)', 'var(--report-chart-teal-2)'];
+  const costSlices: DonutSlice[] = buildCostCompositionSlices(costing).map((s, i) => ({
+    label: s.label,
+    value: figureValue(s.value) ?? 0,
+    color: COST_COLORS[i % COST_COLORS.length],
+  }));
 
   return { draft, costing, salesSlices, costSlices, contributors };
 }

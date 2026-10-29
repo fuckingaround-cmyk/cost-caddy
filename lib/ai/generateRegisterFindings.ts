@@ -17,17 +17,26 @@ const OPENAI_TEXT_MODEL = 'gpt-4o-mini';
 // Regenerate write findings to the same standard.
 export const REGISTER_FINDINGS_RULES = `
 Rules:
-- Ground every statement in the auditor's remark and the table rows. Never invent a fact.
+- The auditor's remark is the primary source of truth for these findings — lead with what it
+  actually says. Never substitute a generic observation for what the auditor specifically wrote;
+  if the remark calls out a particular bill, pattern, person or reason, reflect that, not a
+  stock phrase. Ground every statement in the auditor's remark and the table rows — never invent
+  a fact, and never cite a number, threshold or policy figure that doesn't appear in the remark,
+  the policy context, or the table rows.
 - Be BRIEF: "findings" and "correctiveMeasures" must each be at most TWO short sentences (about
   two lines in a printed report). This is a summary only — the reader can see every row in the
-  table printed right below, so never list individual bills, dates or names.
-- Findings style, for example: "Several bills were found with discounts ranging from 20% to 53%,
-  well above the 10% threshold." Say what pattern was found across the register, not each entry.
-- You may quote the lowest and highest figure exactly as they appear in the rows (a range), and
-  the threshold exactly as stated in the policy context. You must NEVER compute a difference, sum,
-  average, count or percentage-point delta — never derive a new number from the figures.
-- Corrective measures: one concrete, general action (e.g. require documented manager approval for
-  discounts above the threshold), not a long list.
+  table printed right below, so never list individual bills, dates or names unless the auditor's
+  remark specifically calls one out.
+- Findings style, for example: "Several bills were found with discounts well above what the
+  auditor's remark describes as normal for this outlet." Say what pattern was found across the
+  register, tying it back to the auditor's remark, not each entry.
+- You may quote a lowest/highest figure exactly as it appears in the rows (a range), and any
+  threshold or policy figure exactly as stated in the auditor's remark or the policy context —
+  never a number from neither source. You must NEVER compute a difference, sum, average, count
+  or percentage-point delta — never derive a new number from the figures.
+- Corrective measures: one concrete, general action grounded in what the auditor's remark
+  flagged (e.g. require documented manager approval where the remark notes approval was
+  missing), not a long list and not a generic boilerplate action.
 - Preserve the auditor's meaning; write clear, professional prose.
 - If the auditor's remark is empty, write a short, factual, non-alarmist observation based only
   on patterns visible in the rows (e.g. a repeated approver, missing reasons) and a modest

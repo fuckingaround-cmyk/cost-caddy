@@ -41,10 +41,11 @@ body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: 
 [data-scroll-x] { overflow: visible !important; }
 [data-pos-table] th, [data-pos-table] td { padding: 5px 8px !important; font-size: 10.5px !important; }
 tr { page-break-inside: avoid; }
-/* Compact print: the screen layout is designed for ~1420px but a landscape Letter page is
-   ~980px wide, so px sizes read ~45% too big. Zoom the report down and tighten page 1. */
+/* Compact print: the screen layout is designed for ~1420px but a landscape Letter page's
+   printable width (11in - 0.8in margins) is ~980px, so zoom must shrink by that full ratio
+   or the right-most columns clip. Zoom the report down and tighten page 1. */
 [data-report-main] {
-  zoom: 0.78;
+  zoom: 0.63;
 }
 [data-report-title] {
   font-size: 30px !important;
@@ -61,7 +62,7 @@ tr { page-break-inside: avoid; }
   padding-bottom: 7px !important;
 }
 [data-gap] {
-  margin-bottom: 16px !important;
+  margin-bottom: 8px !important;
 }
 </style>
 </head>
@@ -95,7 +96,7 @@ async function launchChromium() {
 // reportViewModel.ts assembles identical data for both), to a static HTML string, then
 // prints it to a PDF buffer via headless Chromium. Letter landscape, 0.4in margin, so the wide
 // register tables fit the page width instead of clipping.
-export async function renderReportPdf(vm: ReportViewModel, publish: PublishBadge): Promise<Buffer> {
+export async function renderReportPdf(vm: ReportViewModel, publish?: PublishBadge): Promise<Buffer> {
   // Dynamic, not a static top-level import — Next's bundler refuses to let any
   // Server Component/Server Action module statically import react-dom/server (it owns
   // RSC rendering itself). This runs only inside the publish server action, entirely

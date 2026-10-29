@@ -100,7 +100,7 @@ export function ChecklistScreen({
   const checklistTotal = items.length;
   const metricsFilled = defs.filter((d) => parseMetricValue(values[d.id]) !== null).length;
   const metricsTotal = defs.length;
-  const complete = checklistTotal > 0 && checklistDone === checklistTotal && metricsFilled === metricsTotal;
+  const complete = checklistDone === checklistTotal && metricsFilled === metricsTotal;
   const submitLabel = complete
     ? 'Submit for Review'
     : checklistDone !== checklistTotal

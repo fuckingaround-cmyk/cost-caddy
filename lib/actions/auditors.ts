@@ -70,11 +70,14 @@ export async function setAuditorStatus(userId: string, status: 'active' | 'suspe
   revalidatePath('/admin/auditors');
 }
 
-// "Remove" is a soft removal (see plan: audits.auditorId is notNull with no cascade) —
-// suspend + force sign-out revokes login immediately while leaving submitted audits intact.
+// "Remove" is a distinct, terminal status from "suspended" (see plan: audits.auditorId is
+// notNull with no cascade, so the user row itself can't be deleted without orphaning
+// submitted audits) — but unlike suspend, removed is not reactivatable from the UI and the
+// email can't log in again. Force sign-out + status change revokes login immediately while
+// leaving submitted audits intact.
 export async function removeAuditor(userId: string): Promise<void> {
   await requireRole('super_admin');
-  await setAuditorStatusAccount(userId, 'suspended');
+  await setAuditorStatusAccount(userId, 'removed');
   await forceSignOutAccount(userId);
   revalidatePath('/admin/auditors');
 }

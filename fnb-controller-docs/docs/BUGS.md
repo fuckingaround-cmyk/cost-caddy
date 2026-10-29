@@ -965,3 +965,91 @@ History:
 - 2026-10-15  opened (user reported shifted columns on item cancellation register)
 - 2026-10-15  fixed + guard added
 - 2026-10-15  regressed on the last row of a 28-row register (dropped cell, padded as blank); reworked to keyed rows
+
+## BUG-031 — POS register findings cited a hardcoded "10% threshold" instead of the auditor's own remark
+Status: fixed · Area: lib/ai/evidenceFindingsPolicyContext, lib/ai/generateRegisterFindings, lib/ai/analyseRegisterEvidence, lib/evidence/discountSummary
+
+Repro:      Auditor submitted a discount-register remark that never mentioned a percentage; the published
+            report's findings nonetheless read like a generic "discounts above the 10% threshold" note that
+            didn't reflect what the auditor actually wrote.
+Root cause: Three things combined to drown out the remark for POS/register findings (the remark was still
+            sent to OpenAI, just overridden): (1) `EVIDENCE_FINDINGS_POLICY_CONTEXT` hardcoded "the standard
+            discount threshold is 10%" as fact for every org/client, although its own comment flagged it as
+            a placeholder; (2) `REGISTER_FINDINGS_RULES` gave the model a literal "well above the 10%
+            threshold" phrase as its style example; (3) `withDiscountTotals()` unconditionally appended a
+            deterministic "N bills carried discounts above the 10% threshold" sentence to every
+            discount_register finding, computed purely from OCR'd table cells with no link to the remark.
+Fix:        Removed the hardcoded 10% from the policy context (now says: use exactly what the auditor's
+            remark states, never invent a threshold); rewrote `REGISTER_FINDINGS_RULES` to lead with the
+            auditor's remark as the primary source and forbid citing any number not present in the remark,
+            policy context, or table rows; `discountTotalsSentence()` no longer filters/labels by a fixed
+            percentage — it totals every bill with a discount amount and states the total with no threshold
+            claim. Applies to every POS/register report type, not just discount_register.
+Guard:      lib/evidence/discountSummary.test.ts — totals sum every discounted bill with no percentage
+            filtering and no "above X% threshold" wording.
+Related:    ADR-0012, ADR-0013, ADR-0014, ADR-0018, ADR-0020, BUG-030
+
+History:
+- 2026-10-27  opened (user reported report findings citing 10% discount the auditor never mentioned)
+
+## BUG-032 — "Remove" auditor was indistinguishable from "Suspend" — reactivatable, same status
+Status: fixed · Area: lib/auth/accounts, lib/auth/login, lib/auth/rbac, lib/actions/auditors, app/admin/(protected)/auditors, db/schema/_enums
+
+Repro:      Admin removed an auditor from Auditors → Manage → "Remove from platform". The row still
+            showed "SUSPENDED" with a "Reactivate" button, identical to a plain Suspend — nothing
+            distinguished "removed" from "temporarily suspended," so it read as if removal hadn't
+            taken effect.
+Root cause: `removeAuditor()` just set `users.status` to the existing `'suspended'` value and force-
+            signed-out the account — there was no third state, so removal and suspension were the same
+            row in the DB and the same UI badge/controls, even though login was in fact already
+            revoked for both.
+Fix:        Added a `'removed'` value to `active_status` (db/migrations/0014_abnormal_raza.sql).
+            `removeAuditor()` now sets status to `'removed'` instead of `'suspended'`. Login
+            (`verifyCredentials`) and session resolution (`getCurrentUser`) now require
+            `status === 'active'` rather than excluding only `'suspended'`, so a removed account's
+            email/password stop working the same way a suspended one's do. The Auditors UI shows a
+            "REMOVED" badge, hides the Suspend/Reactivate/Force-sign-out panel, and replaces "Remove
+            from platform" with a static "cannot be reactivated from here" note once removed.
+Guard:      Manual — after Remove, the row shows "REMOVED" with no Reactivate control, and a login
+            attempt with that auditor's email/password fails (no automated e2e harness yet; Phase 4
+            adds e2e per docs/ROADMAP.md).
+Related:    ARCHITECTURE invariants (auth), docs/EXECUTION.md A3
+
+History:
+- 2026-10-29  opened (user reported removed auditors could still log in / looked only suspended)
+- 2026-10-29  fixed + guard added
+- 2026-10-27  fixed + guard added
+
+## BUG-033 — Evidence photo links were inert in any PDF, and the real generated PDF had no download path
+Status: fixed · Area: app/admin/(protected)/review/[id]/report (EvidenceLightbox, page.tsx, pdf/route.ts), lib/report/renderReportPdf
+
+Repro:      User clicked an evidence photo thumbnail in a PDF exported via the report page's
+            "Print / PDF Preview" (window.print()) — nothing happened, or only some of several
+            thumbnails on the same page were clickable. Separately, there was no UI control anywhere
+            that served the actual Playwright-rendered report.pdf that publishAudit stores — "Print /
+            PDF Preview" only produced a browser print of the live page, never the real file.
+Root cause: `EvidenceThumb` (the live page's interactive thumbnail) was a `<button>` with a JS
+            onClick, which print-to-PDF cannot turn into a clickable link annotation — only the
+            Playwright static pass's `EvidenceThumbStatic` (used solely by `publishAudit`) had a real
+            `<a href>`. Separately, even a corrected `<a href>` thumbnail was unreliable through
+            `window.print()`: Chromium's native print-to-PDF under the report's print-only `zoom` CSS
+            rule intermittently drops link annotations for some anchors on a page (confirmed: 1 of 2
+            links survived in one captured PDF). No route or button in the app ever exposed the
+            stored/generated report.pdf itself.
+Fix:        `EvidenceThumb` now renders a real `<a href={photo.url}>` (click still opens the on-screen
+            lightbox via preventDefault), matching `EvidenceThumbStatic`. Added
+            `app/admin/(protected)/review/[id]/report/pdf/route.ts`: for a published audit it redirects
+            to a short-lived signed URL for the stored, version-stamped PDF; for a draft it renders the
+            same Playwright pipeline on demand (nothing stored/versioned). Added a "Download PDF" button
+            on the report page (draft and published) pointing at this route, and removed the
+            "Print / PDF Preview" button, which only ever drove the unreliable `window.print()` path.
+Guard:      Manual — downloaded the real `report.pdf` for a published audit and inspected its bytes
+            directly (`pypdf`): every evidence photo thumbnail has a `/Link` annotation with a `/URI`
+            pointing at its long-lived signed Supabase URL, confirmed by clicking each one open in
+            Chrome's PDF viewer. No automated e2e harness yet (Phase 4 adds e2e per docs/ROADMAP.md).
+Related:    ADR-0009 (long-lived evidence photo URLs), EXECUTION.md R12 (PDF is the only export format;
+            admin downloads/shares it directly)
+
+History:
+- 2026-10-29  opened (user reported evidence photos unclickable in a PDF)
+- 2026-10-29  fixed + guard added

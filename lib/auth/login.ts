@@ -7,7 +7,7 @@ import { verifyPassword } from './password';
 // (never throws) on any failure so callers can show the design's single error message.
 export async function verifyCredentials(email: string, password: string): Promise<User | null> {
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-  if (!user || user.status === 'suspended') return null;
+  if (!user || user.status !== 'active') return null;
 
   const valid = await verifyPassword(user.pwdHash, password);
   if (!valid) return null;

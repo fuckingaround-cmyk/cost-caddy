@@ -8,7 +8,6 @@ import { metricSections } from '@/lib/calc';
 import { createSignedUrl } from '@/lib/storage';
 import { buildFinancialReportDraft } from '@/lib/report/financialDraft';
 import { ReviewItemRow, type ReviewItem } from './ReviewItemRow';
-import { OperationalFilesPanel } from './OperationalFilesPanel';
 import { GenerateReportButton } from './GenerateReportButton';
 import { PublishButton } from './PublishButton';
 import { FinancialSummaryPanel } from './FinancialSummaryPanel';
@@ -209,8 +208,6 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
           ))
         )}
       </div>
-
-      <OperationalFilesPanel auditId={id} files={opFiles} />
 
       {financialDraft && <FinancialSummaryPanel draft={financialDraft} />}
 
