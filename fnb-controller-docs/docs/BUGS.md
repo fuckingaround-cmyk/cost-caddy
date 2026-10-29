@@ -1003,20 +1003,26 @@ Root cause: `removeAuditor()` just set `users.status` to the existing `'suspende
             signed-out the account — there was no third state, so removal and suspension were the same
             row in the DB and the same UI badge/controls, even though login was in fact already
             revoked for both.
-Fix:        Added a `'removed'` value to `active_status` (db/migrations/0014_abnormal_raza.sql).
-            `removeAuditor()` now sets status to `'removed'` instead of `'suspended'`. Login
-            (`verifyCredentials`) and session resolution (`getCurrentUser`) now require
-            `status === 'active'` rather than excluding only `'suspended'`, so a removed account's
-            email/password stop working the same way a suspended one's do. The Auditors UI shows a
-            "REMOVED" badge, hides the Suspend/Reactivate/Force-sign-out panel, and replaces "Remove
-            from platform" with a static "cannot be reactivated from here" note once removed.
-Guard:      Manual — after Remove, the row shows "REMOVED" with no Reactivate control, and a login
-            attempt with that auditor's email/password fails (no automated e2e harness yet; Phase 4
-            adds e2e per docs/ROADMAP.md).
+Fix:        Added a `'removed'` value to `active_status` (db/migrations/0014_abnormal_raza.sql, later
+            applied to production via `db:migrate`). `removeAuditor()` now sets status to `'removed'`
+            instead of `'suspended'`. Login (`verifyCredentials`) and session resolution
+            (`getCurrentUser`) now require `status === 'active'` rather than excluding only
+            `'suspended'`, so a removed account's email/password stop working the same way a suspended
+            one's do. `listAuditors()` filters out `status = 'removed'` rows entirely — removed means
+            gone from the roster, not a third visible row state — so the admin stops seeing a removed
+            auditor on the next list refresh instead of a "REMOVED" badge sitting alongside Active/
+            Suspended rows.
+Guard:      Manual — after Remove, the auditor no longer appears in the Auditors list at all, and a
+            login attempt with that auditor's email/password fails (no automated e2e harness yet;
+            Phase 4 adds e2e per docs/ROADMAP.md).
 Related:    ARCHITECTURE invariants (auth), docs/EXECUTION.md A3
 
 History:
 - 2026-10-29  opened (user reported removed auditors could still log in / looked only suspended)
+- 2026-10-29  fixed: added 'removed' status, blocked login/session for it, applied migration to prod
+- 2026-10-29  regressed: UI initially kept removed auditors visible with a "REMOVED" badge instead of
+  dropping them from the list — user expected them gone; fixed by filtering `listAuditors()` to
+  exclude `status = 'removed'`
 - 2026-10-29  fixed + guard added
 - 2026-10-27  fixed + guard added
 

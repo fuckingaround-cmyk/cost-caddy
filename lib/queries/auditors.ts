@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import { db } from '@/db';
 import { auditorOutlets, outlets, users } from '@/db/schema';
 
@@ -7,17 +7,19 @@ export type AuditorRow = {
   name: string;
   email: string;
   phone: string | null;
-  status: 'active' | 'suspended' | 'removed';
+  status: 'active' | 'suspended';
   lastActiveAt: Date | null;
   outletIds: string[];
   outletNames: string[];
 };
 
+// Removed auditors are terminal and never shown — "removed" means gone from the roster,
+// not a third visible state alongside active/suspended (BUG-032 follow-up).
 export async function listAuditors(orgId: string): Promise<AuditorRow[]> {
   const auditorRows = await db
     .select()
     .from(users)
-    .where(and(eq(users.orgId, orgId), eq(users.role, 'auditor')))
+    .where(and(eq(users.orgId, orgId), eq(users.role, 'auditor'), ne(users.status, 'removed')))
     .orderBy(users.createdAt);
 
   const access = await db
@@ -33,7 +35,7 @@ export async function listAuditors(orgId: string): Promise<AuditorRow[]> {
       name: u.name,
       email: u.email,
       phone: u.phone,
-      status: u.status,
+      status: u.status as 'active' | 'suspended',
       lastActiveAt: u.lastActiveAt,
       outletIds: mine.map((m) => m.outletId),
       outletNames: mine.map((m) => (m.outletCity ? `${m.outletName} (${m.outletCity})` : m.outletName)),

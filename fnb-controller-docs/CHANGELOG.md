@@ -8,7 +8,7 @@ and DESIGN Part B). One dated line per shipped thing.
 ### 2026-10-29
 - Fixed: evidence photo thumbnails in the report's compliance matrix are now real links (`<a href>`), not buttons, so they survive into any PDF export as clickable link annotations — previously only the Playwright-rendered publish PDF had working links, and the live page's thumbnails were inert once printed (BUG-033).
 - Added: a "Download PDF" button on the report page for both drafts and published audits — drafts render on demand via the same Playwright pipeline (nothing stored or versioned), published audits download the actual stored, version-stamped PDF. Previously there was no way to retrieve the real generated PDF at all; "Print / PDF Preview" (now removed) only triggered the browser's own unreliable print-to-PDF.
-- Fixed: removing an auditor now sets a distinct "removed" status instead of reusing "suspended" — their email/password stop working exactly as before, but the Auditors list now shows "REMOVED" with no Reactivate control, instead of looking identical to a plain suspend (BUG-032).
+- Fixed: removing an auditor now sets a distinct "removed" status instead of reusing "suspended" — their email/password stop working immediately, and the Auditors list drops them entirely instead of leaving a row that looks identical to a plain suspend (BUG-032).
 
 ### 2026-10-27
 - Changed: Section 1B of the per-audit report is now a 3-panel row — Cost Composition donut, a flat Direct Cost by Category table, and a Cost vs. Sales by Category bar panel — replacing the single grouped A/B cost table (UX-036).
