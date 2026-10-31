@@ -1,5 +1,5 @@
 import type { MetricDef, MetricValues } from '@/lib/calc/types';
-import { computeMetrics, metricDen, parseMetricValue } from '@/lib/calc/metrics';
+import { computeMetrics, parseMetricValue } from '@/lib/calc/metrics';
 import { figure, percentFigure, type ReportFigure } from './figure';
 
 // C4 — shapes F7's cost rows into Report v4 §1B's exact layout (Audit report v4.dc.html
@@ -36,10 +36,12 @@ export function buildCostingBreakdown(defs: MetricDef[], values: MetricValues | 
   const c = computeMetrics(defs, vals);
   const costRows = defs.filter((d) => d.section === 'cost');
 
+  const netSale = figure(c.netSale);
+
   const lineItem = (d: MetricDef): CostLineItem => ({
     label: d.label,
     value: figure(parseMetricValue(vals[d.id])),
-    pct: percentFigure(figure(parseMetricValue(vals[d.id])), figure(metricDen(c, d.den))),
+    pct: percentFigure(figure(parseMetricValue(vals[d.id])), netSale),
   });
 
   const barRows = costRows.filter((d) => d.group === 'bar');
@@ -48,7 +50,6 @@ export function buildCostingBreakdown(defs: MetricDef[], values: MetricValues | 
 
   const barCost = figure(c.barCost);
   const kitchenCost = figure(c.kitchenCost);
-  const netSale = figure(c.netSale);
   const barSale = figure(c.barSale);
   const kitchenSale = figure(c.kitchenSale);
   const fnbCost = figure(c.fnbCost);
