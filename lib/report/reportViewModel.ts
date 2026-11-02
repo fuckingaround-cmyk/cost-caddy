@@ -61,7 +61,7 @@ export async function loadReportViewModel(orgId: string, auditId: string): Promi
     values,
     opFiles.map((f) => ({ type: f.type, period: f.period, parsed: f.parseStatus === 'parsed', coverageSummary: f.coverageSummary })),
   );
-  const costing = buildCostingBreakdown(defs, values);
+  const costing = buildCostingBreakdown(defs, values, draft);
 
   const itemPhotos = await Promise.all(
     items.map(async (it) => {

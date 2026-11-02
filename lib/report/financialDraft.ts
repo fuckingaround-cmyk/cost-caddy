@@ -59,10 +59,10 @@ export interface CostingDraft {
   ncCost: ReportFigure;
   fnbCost: ReportFigure;
   netFnbCost: ReportFigure;
-  barCostPct: ReportFigure; // of barSale
-  kitchenCostPct: ReportFigure; // of kitchenSale
-  fnbCostPct: ReportFigure; // of netSale
-  netFnbCostPct: ReportFigure; // of netSale
+  barCostPct: ReportFigure; // of the bar group's net sales (sales − discount)
+  kitchenCostPct: ReportFigure; // of the kitchen group's net sales (sales − discount)
+  fnbCostPct: ReportFigure; // of overall net sales (sales − discount)
+  netFnbCostPct: ReportFigure; // of overall net sales (sales − discount)
 }
 
 export interface OperationalFileSummary {
@@ -86,6 +86,14 @@ function sumFigure(defs: MetricDef[], values: MetricValues, ids: string[]): Repo
   for (const id of ids) {
     const n = parseMetricValue(values[id]);
     if (n !== null) total = (total ?? 0) + n;
+  }
+  return figure(total);
+}
+
+function sumFigures(figs: ReportFigure[]): ReportFigure {
+  let total: number | null = null;
+  for (const f of figs) {
+    if (f.status === 'ok') total = (total ?? 0) + f.value;
   }
   return figure(total);
 }
@@ -153,11 +161,16 @@ export function buildFinancialReportDraft(
     .filter((d) => d.section === 'sales')
     .map((d) => buildSalesRow(d, defs, vals, netSale, totalTaxes, totalCharges, covers));
 
+  // A template with no discount metrics at all has nothing to subtract, not missing
+  // data — same special case buildSalesRow applies per row.
+  const discountRowCount = defs.filter((d) => d.section === 'discount').length;
+  const totalDiscountsOrZero = discountRowCount === 0 ? figure(0) : totalDiscounts;
+
   const total: RevenueGroupTotals = {
     label: 'Total',
     sales: netSale,
-    discount: totalDiscounts,
-    netSales: subtractFigures(netSale, totalDiscounts),
+    discount: totalDiscountsOrZero,
+    netSales: subtractFigures(netSale, totalDiscountsOrZero),
     taxes: totalTaxes,
     serviceCharge: totalCharges,
     grossSale,
@@ -169,6 +182,10 @@ export function buildFinancialReportDraft(
   const ncCost = figure(c.ncCost);
   const fnbCost = figure(c.fnbCost);
   const netFnbCost = figure(c.netFnbCost);
+
+  const barNetSales = sumFigures(rows.filter((r) => r.revGroup === 'bar').map((r) => r.netSales));
+  const kitchenNetSales = sumFigures(rows.filter((r) => r.revGroup === 'kitchen').map((r) => r.netSales));
+  const overallNetSales = total.netSales;
 
   return {
     kpis: {
@@ -190,10 +207,10 @@ export function buildFinancialReportDraft(
       ncCost,
       fnbCost,
       netFnbCost,
-      barCostPct: percentFigure(barCost, barSale),
-      kitchenCostPct: percentFigure(kitchenCost, kitchenSale),
-      fnbCostPct: percentFigure(fnbCost, netSale),
-      netFnbCostPct: percentFigure(netFnbCost, netSale),
+      barCostPct: percentFigure(barCost, barNetSales),
+      kitchenCostPct: percentFigure(kitchenCost, kitchenNetSales),
+      fnbCostPct: percentFigure(fnbCost, overallNetSales),
+      netFnbCostPct: percentFigure(netFnbCost, overallNetSales),
     },
     operationalFiles,
   };

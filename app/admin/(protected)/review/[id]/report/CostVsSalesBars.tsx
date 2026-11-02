@@ -33,7 +33,7 @@ export function CostVsSalesBars({ breakdown }: { breakdown: CostingBreakdown }) 
           );
         })}
       </div>
-      <p style={{ margin: '16px 0 0', fontSize: 11, color: 'var(--r-muted)' }}>Cost shown as a share of that category&rsquo;s own sales</p>
+      <p style={{ margin: '16px 0 0', fontSize: 11, color: 'var(--r-muted)' }}>Cost shown as a share of that category&rsquo;s own net sales</p>
     </div>
   );
 }

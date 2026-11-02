@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildCostingBreakdown } from './costingBreakdown';
+import { buildFinancialReportDraft } from './financialDraft';
 import type { MetricDef, MetricValues } from '@/lib/calc/types';
 
 // Same seed as lib/calc/metrics.test.ts / lib/report/financialDraft.test.ts.
@@ -35,7 +36,8 @@ function ok(f: { status: string; value?: number }): number {
 }
 
 describe('buildCostingBreakdown', () => {
-  const b = buildCostingBreakdown(DEFAULT_METRICS, MTD_FULL);
+  const draft = buildFinancialReportDraft(DEFAULT_METRICS, MTD_FULL, []);
+  const b = buildCostingBreakdown(DEFAULT_METRICS, MTD_FULL, draft);
 
   it('groups bar cost items and totals them against bar sale', () => {
     expect(b.bar).not.toBeNull();
@@ -78,15 +80,31 @@ describe('buildCostingBreakdown', () => {
       { id: 'm_food', label: 'Food Sales', section: 'sales', revGroup: 'kitchen' },
       { id: 'm_ckit', label: 'Food Kitchen', section: 'cost', group: 'kitchen', den: 'm_food' },
     ];
-    const breakdown = buildCostingBreakdown(kitchenOnly, { m_pax: '10', m_food: '5000', m_ckit: '2000' });
+    const kitchenOnlyValues = { m_pax: '10', m_food: '5000', m_ckit: '2000' };
+    const breakdown = buildCostingBreakdown(kitchenOnly, kitchenOnlyValues, buildFinancialReportDraft(kitchenOnly, kitchenOnlyValues, []));
     expect(breakdown.bar).toBeNull();
     expect(breakdown.kitchen).not.toBeNull();
   });
 
   it('an all-empty audit needs data everywhere, never ₹0', () => {
-    const breakdown = buildCostingBreakdown(DEFAULT_METRICS, {});
+    const breakdown = buildCostingBreakdown(DEFAULT_METRICS, {}, buildFinancialReportDraft(DEFAULT_METRICS, {}, []));
     expect(breakdown.bar!.total.status).toBe('needs-data');
     expect(breakdown.fnbTotal.status).toBe('needs-data');
     expect(breakdown.netFnbTotal.status).toBe('needs-data');
+  });
+
+  it('resolves % against net sales (sales minus discount), not gross', () => {
+    const metricsWithDiscount: MetricDef[] = [
+      ...DEFAULT_METRICS,
+      { id: 'm_dliq', label: 'Liquor Discount', section: 'discount', revGroup: 'bar' },
+    ];
+    const valuesWithDiscount: MetricValues = { ...MTD_FULL, m_dliq: '5642' };
+    const draftWithDiscount = buildFinancialReportDraft(metricsWithDiscount, valuesWithDiscount, []);
+    const breakdown = buildCostingBreakdown(metricsWithDiscount, valuesWithDiscount, draftWithDiscount);
+
+    const liquorNetSales = ok(draftWithDiscount.revenueMatrix.rows.find((r) => r.key === 'm_liquor')!.netSales);
+    expect(liquorNetSales).toBeLessThan(55642); // confirms the discount actually moved the denominator off gross sales
+    const liquor = breakdown.bar!.items.find((i) => i.label === 'Liquor')!;
+    expect(ok(liquor.pct)).toBeCloseTo((15790 / liquorNetSales) * 100, 5); // den: m_liquor, net of discount
   });
 });

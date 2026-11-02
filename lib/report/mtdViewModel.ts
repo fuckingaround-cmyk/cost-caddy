@@ -3,7 +3,7 @@ import { listOperationalFiles } from '@/lib/queries/review';
 import { parseMetricValue, type MetricDef, type MetricValues } from '@/lib/calc';
 import { buildFinancialReportDraft, type FinancialReportDraft } from './financialDraft';
 import { buildCostingBreakdown, buildCostCompositionSlices, type CostingBreakdown } from './costingBreakdown';
-import { figureValue } from './figure';
+import { figureValue, subtractFigures } from './figure';
 import type { DonutSlice } from '@/app/admin/(protected)/review/[id]/report/CompositionDonut';
 
 export interface MtdContributor {
@@ -12,6 +12,20 @@ export interface MtdContributor {
   templateName: string;
   version: number;
   publishedAt: Date;
+  periodStart: string;
+  periodEnd: string;
+}
+
+// One bar per contributing audit's OWN period (not merged) — the weekly/bi-weekly trend
+// charts read this, so the cadence shown always matches however the admin actually
+// spaced out that outlet's audits, instead of assuming a fixed 7-day week.
+export interface MtdWeeklyEntry {
+  auditId: string;
+  label: string;
+  periodStart: string;
+  periodEnd: string;
+  netSale: number | null;
+  cost: number | null;
 }
 
 export interface MtdViewModel {
@@ -20,6 +34,7 @@ export interface MtdViewModel {
   salesSlices: DonutSlice[];
   costSlices: DonutSlice[];
   contributors: MtdContributor[];
+  weekly: MtdWeeklyEntry[];
 }
 
 // MTD is recomputed live on every view — no stored/versioned row of its own (DESIGN.md
@@ -34,6 +49,7 @@ export async function buildMtdViewModel(contributors: MtdContributor[]): Promise
   const mergedDefs = new Map<string, MetricDef>();
   const mergedValues: MetricValues = {};
   const opFiles: Awaited<ReturnType<typeof listOperationalFiles>> = [];
+  const weekly: MtdWeeklyEntry[] = [];
 
   for (const c of contributors) {
     const [defs, values, files] = await Promise.all([
@@ -49,6 +65,20 @@ export async function buildMtdViewModel(contributors: MtdContributor[]): Promise
       mergedValues[d.id] = (cur ?? 0) + n;
     }
     opFiles.push(...files);
+
+    // This audit's OWN (unmerged) draft/costing, purely for the weekly trend charts —
+    // the merged totals above remain the sole source for every other number on the page.
+    const ownFiles = files.map((f) => ({ type: f.type, period: f.period, parsed: f.parseStatus === 'parsed', coverageSummary: f.coverageSummary }));
+    const ownDraft = buildFinancialReportDraft(defs, values, ownFiles);
+    const ownCosting = buildCostingBreakdown(defs, values, ownDraft);
+    weekly.push({
+      auditId: c.auditId,
+      label: c.name || c.templateName,
+      periodStart: c.periodStart,
+      periodEnd: c.periodEnd,
+      netSale: figureValue(subtractFigures(ownDraft.kpis.netSale, ownDraft.kpis.totalDiscounts)),
+      cost: figureValue(ownCosting.netFnbTotal),
+    });
   }
 
   const defs = [...mergedDefs.values()];
@@ -57,7 +87,7 @@ export async function buildMtdViewModel(contributors: MtdContributor[]): Promise
     mergedValues,
     opFiles.map((f) => ({ type: f.type, period: f.period, parsed: f.parseStatus === 'parsed', coverageSummary: f.coverageSummary })),
   );
-  const costing = buildCostingBreakdown(defs, mergedValues);
+  const costing = buildCostingBreakdown(defs, mergedValues, draft);
 
   const SALES_COLORS = ['var(--status-pass-bg-deep)', 'var(--status-pass-fg)', 'var(--report-chart-teal-1)', 'var(--report-chart-teal-2)', 'var(--report-chart-teal-3)'];
   const salesSlices: DonutSlice[] = draft.revenueMatrix.rows.map((r, i) => ({
@@ -73,5 +103,5 @@ export async function buildMtdViewModel(contributors: MtdContributor[]): Promise
     color: COST_COLORS[i % COST_COLORS.length],
   }));
 
-  return { draft, costing, salesSlices, costSlices, contributors };
+  return { draft, costing, salesSlices, costSlices, contributors, weekly };
 }

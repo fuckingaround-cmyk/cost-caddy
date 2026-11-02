@@ -112,11 +112,15 @@ describe('buildFinancialReportDraft — MTD_FULL', () => {
     expect(sum((r) => r.grossSale as never)).toBeCloseTo(274999, 1);
   });
 
-  it('derives cost percentages against the matching revenue line', () => {
-    expect(ok(draft.costing.barCostPct)).toBeCloseTo((33098 / 82824) * 100, 5);
-    expect(ok(draft.costing.kitchenCostPct)).toBeCloseTo((65296 / 165151) * 100, 5);
-    expect(ok(draft.costing.fnbCostPct)).toBeCloseTo((98394 / 247975) * 100, 5);
-    expect(ok(draft.costing.netFnbCostPct)).toBeCloseTo((80894 / 247975) * 100, 5);
+  it('derives cost percentages against the matching revenue line\'s net sales (sales minus discount)', () => {
+    const barNetSales = ok(rows('m_liquor').netSales) + ok(rows('m_bev').netSales);
+    const kitchenNetSales = ok(rows('m_food').netSales);
+    const overallNetSales = ok(draft.revenueMatrix.total.netSales);
+
+    expect(ok(draft.costing.barCostPct)).toBeCloseTo((33098 / barNetSales) * 100, 5);
+    expect(ok(draft.costing.kitchenCostPct)).toBeCloseTo((65296 / kitchenNetSales) * 100, 5);
+    expect(ok(draft.costing.fnbCostPct)).toBeCloseTo((98394 / overallNetSales) * 100, 5);
+    expect(ok(draft.costing.netFnbCostPct)).toBeCloseTo((80894 / overallNetSales) * 100, 5);
   });
 });
 
