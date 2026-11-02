@@ -45,6 +45,9 @@ Storage bucket + signed URLs. Deploy pipeline. `CLAUDE.md`.
   frozen; report v4 render; **PDF (Playwright, version-stamped)** — the only export format;
   evidence photos render as real clickable/embedded thumbnails, both on the Report screen and in the
   PDF (D4, UX-017).
+- **MTD consolidated report** (ADR-0006, ADR-0021): a live-recomputed rollup of a month's published audits
+  per outlet, reachable from the restaurant's Reports tab — hardened with overlap-blocked audit periods,
+  stop-at-first-gap inclusion, and an optional persisted/versioned "Lock & Publish MTD" PDF. Shipped.
 - **No Client Portal for now.** The admin delivers the PDF directly; the white-labelled, token-accessed
   read-only Client Portal is designed (`Super Admin Flow.dc.html`) but out of current scope — see
   `EXECUTION.md` R12 and "Not yet designed."

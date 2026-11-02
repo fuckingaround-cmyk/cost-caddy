@@ -5,6 +5,13 @@ and DESIGN Part B). One dated line per shipped thing.
 
 ## Foundations — 2026
 
+### 2026-11-02
+- Added: audit creation now hard-blocks a period that overlaps an existing audit for the same outlet, naming the conflict, so the MTD rollup can't silently double-count (ADR-0021).
+- Added: the MTD consolidated report now stops at the first coverage gap — a later published audit with a missing period before it is excluded from the total and flagged in a banner, instead of being silently summed in regardless of order (ADR-0021).
+- Added: a "Lock & Publish MTD" action persists the current MTD rollup as a versioned, stored PDF (same durability as a per-audit report) — all locked versions remain individually downloadable; the live MTD page is unaffected and keeps recomputing fresh (ADR-0021).
+- Added: app-wide hover/press/focus-visible motion — buttons, links and rows now give subtle visual feedback on hover and click across the Admin and Auditor portals, via a universal baseline plus hand-tuned `Button`/`ListRow`/`TextInput` states; excluded from the printed report PDF (UX-038).
+- Changed: App UI rebranded to the Cost Caddy visual identity — brand blue in place of navy, Space Grotesk/IBM Plex Mono in place of Newsreader/Inter, 4px control radius, and the real Cost Caddy logo on the sticky header and both login screens; the Report surface's colours/type are unchanged (UX-039).
+
 ### 2026-10-29
 - Fixed: evidence photo thumbnails in the report's compliance matrix are now real links (`<a href>`), not buttons, so they survive into any PDF export as clickable link annotations — previously only the Playwright-rendered publish PDF had working links, and the live page's thumbnails were inert once printed (BUG-033).
 - Added: a "Download PDF" button on the report page for both drafts and published audits — drafts render on demand via the same Playwright pipeline (nothing stored or versioned), published audits download the actual stored, version-stamped PDF. Previously there was no way to retrieve the real generated PDF at all; "Print / PDF Preview" (now removed) only triggered the browser's own unreliable print-to-PDF.

@@ -35,7 +35,7 @@
   font-weight: 700;
   font-family: var(--font-report-mono);
   font-variant-numeric: tabular-nums;
-  color: var(--navy-700);
+  color: var(--brand);
 }
 
 .sub {
@@ -58,5 +58,5 @@
   font-family: var(--font-report-mono);
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--navy-700);
+  color: var(--brand);
 }

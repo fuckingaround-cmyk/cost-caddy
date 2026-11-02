@@ -24,27 +24,27 @@ deliberately different type treatments — do not merge them.**
 
 ## Colour
 
-**Brand / navy**
+**Brand — Cost Caddy blue** (rebrand, 2026-11; supersedes the original `.dc.html`-derived navy
+ramp below the same role each token always had — see Part B's rebrand entry. Old `--navy-*` names
+were renamed, not aliased, so `grep`ping for `navy` in CSS should now return nothing):
 | Token | Hex | Use |
 |---|---|---|
-| `--navy-900` | `#16202e` | Strongest ink; report body text |
-| `--navy-700` | `#1e3a5f` | **Brand primary** — primary buttons, active nav, report header, progress fill, icon strokes, eyebrows |
-| `--navy-500` | `#2f5d8a` | Links / secondary accents |
-| `--navy-050` | `#eef2f7` | Navy tint fill (icon chips, active nav bg) |
-| `--navy-025` | `#f0f4f9` | Lightest tint (role badges) |
-| `--navy-chip` | `#eef2f9` | Department chip fill (added during F2 — distinct from `--navy-025`, confirmed against the chip markup in all three flow files) |
-| `--navy-border` | `#b9c8dd` | Border on navy chips |
-| `--navy-border-soft` | `#dbe4f0` / `#d6e2ee` / `#a8c4de` | Progressive card/table borders |
+| `--brand` | `#2563eb` | **Brand primary** — primary buttons, active nav, report header, progress fill, icon strokes, eyebrows (was `--navy-700` / `#1e3a5f`) |
+| `--brand-hover` | `#3b82f6` | Hover state for brand-primary controls (was `--navy-500` / `#2f5d8a`) |
+| `--brand-active` | `#1d4ed8` | Press/active state — one step darker in the same Tailwind-blue ramp the brand palette uses (was `--navy-900` / `#16202e`) |
+| `--brand-tint` | `#edf3ff` | Light tint fill (icon chips, active nav bg, role badges, department chips, row hover) — consolidates the former `--navy-050` / `--navy-025` / `--navy-chip` |
+| `--brand-border` | `#cbd5e1` | Border on brand-tinted chips/rows (was `--navy-border` / strongest `--navy-border-soft`) |
+| `--brand-border-soft` | `#e1e9f6` | Lighter progressive card/table border (was the softer `--navy-border-soft` steps) |
 
 **Neutrals — App UI**
 | Token | Hex | Use |
 |---|---|---|
-| `--bg` | `#fafafa` | Page background |
+| `--bg` | `#f8faff` | Page background (was `#fafafa` — brand's `surface-subtle`, a faint blue tint) |
 | `--surface` | `#ffffff` | Cards, panels, sticky header |
-| `--surface-alt` | `#f7f9fb` / `#fafbfc` | Card header bands |
+| `--surface-alt` | `#f8faff` / `#fafbfc` | Card header bands |
 | `--surface-calculated` | `#f6f8fa` | Calculated field fill (added during F2 — distinct from `--surface-alt`, confirmed against `Auditor Flow - Mobile/Laptop.dc.html` line ~125) |
-| `--ink` / `--ink-2` / `--ink-3` | `#111` / `#333` / `#555` | Headings / body / secondary |
-| `--muted` / `--muted-2` | `#888` / `#999` | Labels, meta / lowest-priority meta |
+| `--ink` / `--ink-2` / `--ink-3` | `#15191f` / `#4d4d4d` / `#737985` | Headings / body / secondary (rebrand — brand's `text` / `text-secondary` / `text-muted`; was `#111` / `#333` / `#555`) |
+| `--muted` / `--muted-2` | `#737985` / `#8992a0` | Labels, meta / lowest-priority meta (was `#888` / `#999`) |
 | `--placeholder` | `#bbb` | Input placeholders |
 | `--hint` | `#8a93a0` | Grouped-panel header hint text (added during F2 — `Super Admin Flow.dc.html` grouped-panel headers) |
 | `--divider` | `#eee` | List-row dividers (the workhorse) |
@@ -83,23 +83,26 @@ sales composition teals `#0d3b34` · `#1f6f62` · `#4a9c8c` (the same hexes as `
 `-fg` / `-dot`, reused rather than duplicated) · `#8fc5b8` · `#cfe3dd`; cost composition rust tones
 `#7a2e14` · `#b8541f` · `#d98b4a` · `#f0c9a0`.
 
-Audit lifecycle pills: `assigned` (neutral) → `in-progress` (navy) → `submitted` (navy-solid) →
+Audit lifecycle pills: `assigned` (neutral) → `in-progress` (brand) → `submitted` (brand-solid) →
 `published` (green) · `deferred`. Checklist item statuses: `pass` · `fail` · `na` (UX-024 — `observation`
 removed); `fail` also carries `severity` (High/Medium/Low), `impact`, `correctiveAction`.
 
 ## Typography
-**App UI** — body/UI `Inter` (400–700); page & screen titles `Newsreader` serif (500/600, titles &
-wordmark only, never body); data/IDs `ui-monospace`. **Report** — all text `Inter Tight` (400–800); **all
-numbers/currency/KPIs `IBM Plex Mono` with `font-variant-numeric: tabular-nums` (non-negotiable)**; icons
-`Material Symbols Outlined`. Do not substitute Inter on the report or mix icon systems on one surface.
+**App UI** (rebrand, 2026-11) — display/headings/screen titles/wordmark/buttons/nav `Space Grotesk`
+(500/600/700, was `Newsreader` serif); body/labels/metadata/inputs/data-IDs `IBM Plex Mono` (400/500,
+was `Inter`). **Report** — all text `Inter Tight` (400–800); **all numbers/currency/KPIs `IBM Plex Mono`
+with `font-variant-numeric: tabular-nums` (non-negotiable)**; icons `Material Symbols Outlined`. Report
+was already on IBM Plex Mono for numerals, so the rebrand needed no change there — do not substitute
+Inter Tight on the report or mix icon systems on one surface.
 
-Scale (px): wordmark 21/600 · login title 28/600 · screen title 22/600 (Newsreader) · panel 18/600 ·
+Scale (px): wordmark 21/600 · login title 28/600 · screen title 22/600 (Space Grotesk) · panel 18/600 ·
 row title 14–15/600 · card header 13–13.5/700 · body 13/400 · meta 12/400 `--muted` · small meta 11.5 ·
 eyebrow 10–11/700 uppercase `.06–.12em` · chip/pill 10/700 `.06em` · report KPI 18–21/700 mono.
 Line height 1.4 tight / 1.55–1.6 prose; `text-wrap: pretty` on prose.
 
 ## Geometry
-Radii `3` (tags) · `6` (inputs/buttons) · `8` (cards) · `10` (panels) · `12` (large) · `20`/`9999` (pills).
+Radii `3` (tags) · `4` (inputs/buttons, rebrand — was `6`; explicit Cost Caddy brand preference, never
+pill-shaped primary buttons) · `8` (cards) · `10` (panels) · `12` (large) · `20`/`9999` (pills).
 Borders always `1px solid`; read-only/calculated `1px dashed #d9dee4`. Spacing rhythm
 `2·4·6·8·10·12·14·16·18·22·24·28`; card padding 12–16; page padding 24 desktop / 16 mobile; sticky header
 `14px 28px`. Shadows almost none — depth from borders (only the report header carries one). Lists are
@@ -112,13 +115,14 @@ flat rows on `#fafafa`, separated by `1px solid #eee` — no card-per-row.
 `Auditor Flow - Mobile.dc.html` / `- Laptop.dc.html`'s `isMobile` ternaries.
 
 ## Core components
-- **Sticky header** — white, `1px solid #e6e6e6` bottom, `sticky; z-index:20`; Newsreader wordmark left, role badge right.
-- **Role badge** — pill, `#f0f4f9` bg / `#b9c8dd` border / `#1e3a5f` text, 11/700 uppercase `.08em`.
-- **Primary button** — `#1e3a5f`, white text, no border, radius 6, padding 13, 14/600. Secondary = text-only `#888`. Submit disabled until nothing missing.
-- **Text input** — `padding 11px 12px`, `1px solid #ddd`, radius 6, 14px; focus border `#111`; numeric inputs `width:150px; text-align:right`; label above at 12/`#888`.
+- **Sticky header** — white, `1px solid #e6e6e6` bottom, `sticky; z-index:20`; Cost Caddy symbol + Space
+  Grotesk wordmark (`BrandMark`) left, role badge right (was a plain Newsreader text wordmark).
+- **Role badge** — pill, `--brand-tint` bg / `--brand-border` border / `--brand` text, 11/700 uppercase `.08em`.
+- **Primary button** — `--brand`, white text, no border, radius 4, padding 13, 14/600 Space Grotesk. Secondary = text-only `#888`. Submit disabled until nothing missing.
+- **Text input** — `padding 11px 12px`, `1px solid #ddd`, radius 4, 14px; focus border `#111`; numeric inputs `width:150px; text-align:right`; label above at 12/`#888`.
 - **Calculated field** — same box, `1px dashed #d9dee4`, `bg #f6f8fa`, weight 700, right-aligned. Never editable.
-- **Metric section (B2)** — header band `#eef2f9` bg / `#dbe4f0` border, radius 6, title 11/700 uppercase
-  `.08em` navy, note 11/`--hint-2` (`#6b7a90`); each row: label flex-1 (wraps, `min-width:0`), a
+- **Metric section (B2)** — header band `--brand-tint` bg / `--brand-border-soft` border, radius 4, title 11/700 uppercase
+  `.08em` `--brand`, note 11/`--hint-2` (`#6b7a90`); each row: label flex-1 (wraps, `min-width:0`), a
   flex-shrink:0 value block right-aligned — a 100px input or calculated-field display, with its sub
   figure (APC / cost %, or nothing) stacked directly beneath at 11px `--hint`. Adapted from `Super Admin
   Flow.dc.html`'s MTD Metrics tab (originally a 134px value + a separate 94px sub column — that fixed
@@ -129,13 +133,40 @@ flat rows on `#fafafa`, separated by `1px solid #eee` — no card-per-row.
   `--status-fail-fg-app`, then "Confirm delete" (filled `--status-fail-fg-app`, white text) and "Cancel"
   (secondary). A refused action shows its error in the same colour beneath. No new tokens.
 - **Grouped panel** — `1px solid #e4e7ea`, radius 10; header band `#f7f9fb` with 13/700 title, 12px hint, right-aligned progress string (`"4 of 12"`).
-- **Department chip** — 24×24, radius 6, `#eef2f9` bg / `#dbe4f0` border, `#1e3a5f` 11/700, centred.
-- **List row** — `padding 16px 4px`, `border-bottom 1px solid #eee`, pointer; 15/600 title + 15px stroked SVG icon (`#1e3a5f`, `stroke-width 1.8`); 13px `#888` meta; right-aligned status pill.
-- **Progress bar** — 5px tall, track `#eee`, fill `#1e3a5f`, radius 3.
+- **Department chip** — 24×24, radius 4, `--brand-tint` bg / `--brand-border-soft` border, `--brand` 11/700, centred.
+- **List row** — `padding 16px 4px`, `border-bottom 1px solid #eee`, pointer; 15/600 title + 15px stroked SVG icon (`--brand`, `stroke-width 1.8`); 13px `#888` meta; right-aligned status pill.
+- **Progress bar** — 5px tall, track `#eee`, fill `--brand`, radius 3.
 - **Overdue marker** — removed (ADR-0008): the audit date range is a conduct period, not a deadline, so
   nothing in the auditor portal computes or shows an overdue state.
 - **Report table / KPI strip** — full-width `#e4e8ee` rules, 12px cells; header 10.5/600 uppercase `#6b7686`; figures right-aligned mono; category colour dot 8px. KPI strip: big mono number over 10.5 uppercase label, cells divided by `border-right`.
-- **Icons** — App UI: inline stroked SVG `#1e3a5f`, `stroke-width 1.8`, 14–16px, `fill:none`. Report: Material Symbols Outlined.
+- **Icons** — App UI: inline stroked SVG `--brand`, `stroke-width 1.8`, 14–16px, `fill:none`. Report: Material Symbols Outlined.
+
+## Interaction / motion
+No `.dc.html` source specifies hover/press motion beyond `a:hover{color:#666}` (copied verbatim as
+`--ink-hover`); everything else below is new, added for an app-wide hover/press/focus pass (UX-038) —
+reuse these tokens rather than inventing new durations or easings.
+
+- **Tokens** — `--transition-fast: 120ms`, `--transition-base: 160ms`, `--ease-standard:
+  cubic-bezier(0.2, 0, 0, 1)`, `--hover-brightness: 0.97`, `--press-scale: 0.98`, `--ink-hover: #666666`,
+  `--row-hover-bg: var(--brand-tint)`, `--focus-ring: #60a5fa` (rebrand — brand's dedicated `focus` token,
+  distinct from `--brand-hover`), `--shadow-brand-hover: 0 9px 30px rgb(37 99 235 / 8%)` (added with the
+  rebrand for a livelier primary-button hover; brand's own recipe is `3%`, bumped for app-UI visibility).
+- **Universal baseline** (`app/globals.css`) — every `button`, `a`, `[role="button"]` and native checkbox/
+  radio/select transitions `filter`/`transform`/`box-shadow`/`border-color`; hover dims via
+  `filter: brightness(var(--hover-brightness))`, press scales via `transform: scale(var(--press-scale))`.
+  These two properties are deliberately never set by any inline `style`, so the baseline reaches every
+  one-off inline-styled control without per-file edits. Disabled/`aria-disabled` elements are excluded.
+  `:focus-visible` gets a 2px `--focus-ring` outline everywhere. `prefers-reduced-motion: reduce` turns all
+  of it off.
+- **Primary/secondary button** — on top of the baseline, hover lightens (`--brand` → `--brand-hover`) with
+  `--shadow-brand-hover`; press darkens to `--brand-active`. Secondary hover tints to `--surface-alt-1`, press to
+  `--divider`.
+- **List row** — hover fills `--row-hover-bg` and nudges left padding in slightly; press scales to `0.995`.
+- **Text input** — hover tints border to `--border-strong`; focus keeps the existing `--ink` border and
+  adds a `0 0 0 3px var(--brand-tint)` ring.
+- **Print carve-out** — the Playwright-rendered report PDF strips `transition`/`filter` in its print
+  stylesheet (`transform` is left alone — `CompositionDonut`'s static `rotate(-90deg)` depends on it, and
+  no `:hover`/`:active` ever matches during a headless render anyway).
 
 ## Print
 Report + spec are print-first (`doc-page.js`, letter, `0.6in` margin). `[data-noprint]` hidden;
@@ -389,8 +420,12 @@ UX-020 deferred building real MTD aggregation; the user then asked for it direct
 versioned "Generate MTD" action (ADR-0006 has the full trade-off). **Trade-off:** the MTD page shows no
 compliance checklist — a sum of several audits (possibly different templates) has no one coherent
 department/finding list, so `MtdReportBody` lists the contributing audits instead of `ComplianceSection`.
-Also not downloadable as a fixed, dated artifact the way a per-audit report is (nothing to point a
-`reports.version` at) — printing it captures only whatever is live at that moment.
+Also no compliance checklist, for the same reason (ADR-0006). **(Superseded in part by ADR-0021):** the
+MTD rollup can now additionally be locked into its own versioned PDF (`mtdReports`) via "Lock & Publish
+MTD" — the live page itself still always recomputes fresh, but a locked snapshot is retrievable afterward,
+the same durability guarantee a per-audit report has. ADR-0021 also hard-blocks overlapping audit periods
+at creation and stops MTD inclusion at the first coverage gap, so the sum shown can't silently double-count
+or skip ahead of a missing week.
 
 ### UX-022 — Department checklist cards may break across a page, not held together (BUG-023)
 **Decision:** `Audit report v4.dc.html:439,510,624,714` marks every department card `data-avoid`
@@ -593,3 +628,40 @@ per department added height without adding information; one continuous table rea
 matrix, matching the reference screenshot. **Trade-off:** department rows can no longer be reordered or
 isolated as independent cards (e.g. for per-department pagination); if departments ever need independent
 pagination or collapsing, this would need to be revisited.
+
+### UX-038 — App-wide hover/press/focus motion, added via a universal baseline rather than per-component (2026-11-02)
+**Decision:** Added a subtle hover/press/focus-visible language across both the Admin and Auditor portals
+and the on-screen report view: buttons dim on hover and scale down slightly on press, list rows tint their
+background on hover, inputs get a focus ring, and every focusable element gets a visible `:focus-visible`
+outline. Implemented as a universal baseline in `app/globals.css` (targeting `button`, `a`, `[role="button"]`
+by tag, not by component) plus a few hand-tuned components (`Button`, `ListRow`, `TextInput`) — see Part A
+"Interaction / motion" for the token values. **Why:** the app's ~30 interactive-control files are almost
+entirely one-off inline-styled `<button>`s rather than instances of the shared `Button` component (confirmed
+by audit before this change), so a per-component rollout would have meant editing every file; `filter` and
+`transform` are two CSS layers no inline `style` in this codebase sets, so a single tag-level rule reaches
+all of them without touching a single page file. **Trade-off:** the baseline is generic (brightness/scale,
+not bespoke per control) — call sites that want a richer treatment (the shared `Button`, `ListRow`) layer
+their own hover/press rules on top; everything else gets the baseline only. Explicitly excluded from the
+report's print output (see Part A "Print carve-out") since it's a screen-only affordance.
+
+### UX-039 — App UI rebranded to the Cost Caddy visual identity (navy → brand blue, Newsreader/Inter → Space Grotesk/IBM Plex Mono) (2026-11-02)
+**Decision:** Replaced the App UI surface's colour and type system with the Cost Caddy brand
+(`design-system.md`, `cost-caddy-logo.svg` / `-symbol.svg`, supplied directly): the former `.dc.html`-derived
+navy ramp (`--navy-700` etc.) is renamed to a `--brand*` ramp carrying the brand's blue (`#2563eb`); App UI
+headings/buttons/nav/wordmark move from Newsreader to Space Grotesk, and body/labels/inputs/data-IDs move
+from Inter to IBM Plex Mono; button/input radius drops from 6px to the brand's explicit 4px preference. The
+sticky header and both login screens now render the actual Cost Caddy symbol + wordmark (`BrandMark`,
+`public/brand/cost-caddy-symbol.svg`) instead of a plain text wordmark. A new `--shadow-brand-hover` token
+gives the primary button a tinted hover shadow (brand's own recipe is 3% opacity, bumped to 8% so it reads
+on screen) for a livelier hover state. **Why:** direct instruction, with the brand's logo files and token
+spec supplied — Cost Caddy supersedes "F&B Controller" as the product's public identity. **Scope / what's
+untouched:** the Report surface keeps its own `--r-*` colour tokens and Inter Tight / IBM Plex Mono type
+system unchanged (Report numerals were already on IBM Plex Mono, so no font change was needed there); the
+`--navy-*` names were fully renamed rather than aliased, so every consumer (`Button`, `ProgressBar`,
+`DepartmentChip`, `TextInput`, `RoleBadge`, the Report `KpiStrip` accent) was updated in the same pass — see
+Part A "Colour" / "Typography" / "Geometry" for the token-by-token mapping. The original `.dc.html` design
+files and `F&B Controller audit platform/DESIGN-SYSTEM.md` are left as-is (historical/frozen handover
+record of the pre-rebrand visual spec); this entry is the current source of truth for colour/type going
+forward. **Trade-off:** diverges from the `.dc.html` files' literal colour/font values for the first time —
+layout, spacing, and component structure from those files are still authoritative; only the colour and
+typeface skin changed.

@@ -59,7 +59,7 @@ export function EvidenceFindingsPanel({
 
   return (
     <div style={{ border: '1px solid var(--border-card)', borderRadius: 'var(--radius-panel)', overflow: 'hidden', marginBottom: 'var(--space-9)' }}>
-      <div style={{ padding: '10px 13px', background: 'var(--navy-700)', color: '#fff', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+      <div style={{ padding: '10px 13px', background: 'var(--brand)', color: '#fff', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
         {label} — Findings &amp; Corrective Measures
       </div>
       <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -81,7 +81,7 @@ export function EvidenceFindingsPanel({
             type="button"
             disabled={pending}
             onClick={save}
-            style={{ padding: '8px 16px', border: '1px solid var(--navy-700)', background: 'var(--navy-700)', color: '#fff', borderRadius: 'var(--radius-control)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+            style={{ padding: '8px 16px', border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', borderRadius: 'var(--radius-control)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
           >
             {pending ? 'Saving…' : 'Save'}
           </button>

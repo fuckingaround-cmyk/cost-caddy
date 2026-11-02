@@ -29,8 +29,8 @@ export function NavLinks() {
               fontWeight: active ? 700 : 500,
               color: 'var(--ink)',
               textDecoration: 'none',
-              background: active ? 'var(--navy-025)' : 'transparent',
-              borderLeft: `2px solid ${active ? 'var(--navy-700)' : 'transparent'}`,
+              background: active ? 'var(--brand-tint)' : 'transparent',
+              borderLeft: `2px solid ${active ? 'var(--brand)' : 'transparent'}`,
             }}
           >
             {item.label}

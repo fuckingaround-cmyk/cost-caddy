@@ -3,9 +3,10 @@ import { notFound } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { AuditorShell } from '@/components/ui/AuditorShell';
 import { getAuditForAuditor, getAuditItemFiles, getAuditItems } from '@/lib/queries/audits';
+import { formatPeriodRange } from '@/lib/dates';
 
 const RESTAURANT_ICON = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--navy-700)" strokeWidth="1.8" style={{ flexShrink: 0 }}>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="1.8" style={{ flexShrink: 0 }}>
     <path d="M3 9l1-5h16l1 5" />
     <path d="M4 9v10a1 1 0 001 1h14a1 1 0 001-1V9" />
     <path d="M9 20v-6h6v6" />
@@ -13,7 +14,7 @@ const RESTAURANT_ICON = (
 );
 
 const CHECK_ICON = (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--navy-700)" strokeWidth="3">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="3">
     <path d="M4 12l5 5L20 6" />
   </svg>
 );
@@ -26,8 +27,8 @@ const STATUS_CHIP: Record<string, { bg: string; color: string; border: string; l
 };
 
 const AUDIT_STATUS_CHIP: Record<string, { bg: string; color: string; border: string; label: string }> = {
-  submitted: { bg: 'var(--navy-chip)', color: 'var(--navy-700)', border: 'var(--navy-border)', label: 'SUBMITTED' },
-  published: { bg: 'var(--navy-700)', color: 'var(--surface)', border: 'var(--navy-700)', label: 'PUBLISHED' },
+  submitted: { bg: 'var(--brand-tint)', color: 'var(--brand)', border: 'var(--brand-border)', label: 'SUBMITTED' },
+  published: { bg: 'var(--brand)', color: 'var(--surface)', border: 'var(--brand)', label: 'PUBLISHED' },
   assigned: { bg: 'var(--surface)', color: 'var(--muted)', border: 'var(--border)', label: 'ASSIGNED' },
   'in-progress': { bg: '#fffbeb', color: '#b45309', border: '#fde68a', label: 'IN PROGRESS' },
 };
@@ -67,7 +68,7 @@ export default async function AuditorReportPage({ params }: { params: Promise<{ 
               {RESTAURANT_ICON}
               <span>{audit.outletName}</span>
             </div>
-            <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>Period {audit.periodEnd}</div>
+            <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>{formatPeriodRange(audit.periodStart, audit.periodEnd)}</div>
           </div>
           <div
             style={{

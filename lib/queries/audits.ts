@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { auditItemFiles, auditItems, auditMetricDefs, auditMetricValues, audits, outlets, templates, users } from '@/db/schema';
 import type { MetricDef, MetricValues } from '@/lib/calc';
@@ -8,6 +8,7 @@ export type AuditRow = {
   token: string;
   name: string | null;
   status: (typeof audits.status.enumValues)[number];
+  periodStart: string;
   periodEnd: string;
   templateName: string;
   auditorId: string;
@@ -21,6 +22,7 @@ export async function listOutletAudits(orgId: string, outletId: string): Promise
       token: audits.token,
       name: audits.name,
       status: audits.status,
+      periodStart: audits.periodStart,
       periodEnd: audits.periodEnd,
       templateName: templates.name,
       auditorId: audits.auditorId,
@@ -32,7 +34,45 @@ export async function listOutletAudits(orgId: string, outletId: string): Promise
     .where(and(eq(audits.orgId, orgId), eq(audits.outletId, outletId)))
     .orderBy(audits.createdAt);
 
-  return rows;
+  return rows.map((r) => ({ ...r, periodStart: r.periodStart ?? r.periodEnd }));
+}
+
+export type AuditOverlapRow = {
+  id: string;
+  name: string | null;
+  periodStart: string;
+  periodEnd: string;
+};
+
+// ADR-0021 hard-block: any existing audit for this outlet (any status) whose effective
+// range [periodStart ?? periodEnd, periodEnd] intersects the candidate's. Two inclusive
+// ranges [aStart,aEnd] and [bStart,bEnd] overlap iff aStart <= bEnd AND bStart <= aEnd —
+// touching-but-not-overlapping ranges (e.g. 1–7 and 8–14) correctly don't conflict.
+export async function findOverlappingAudit(
+  orgId: string,
+  outletId: string,
+  candidateStart: string,
+  candidateEnd: string,
+): Promise<AuditOverlapRow | null> {
+  const [row] = await db
+    .select({
+      id: audits.id,
+      name: audits.name,
+      periodStart: audits.periodStart,
+      periodEnd: audits.periodEnd,
+    })
+    .from(audits)
+    .where(
+      and(
+        eq(audits.orgId, orgId),
+        eq(audits.outletId, outletId),
+        lte(sql`coalesce(${audits.periodStart}, ${audits.periodEnd})`, candidateEnd),
+        gte(audits.periodEnd, candidateStart),
+      ),
+    )
+    .limit(1);
+  if (!row) return null;
+  return { id: row.id, name: row.name, periodStart: row.periodStart ?? row.periodEnd, periodEnd: row.periodEnd };
 }
 
 export function activeAudits(rows: AuditRow[]): AuditRow[] {
@@ -52,6 +92,7 @@ export type AuditorAuditRow = {
   token: string;
   name: string | null;
   status: (typeof audits.status.enumValues)[number];
+  periodStart: string;
   periodEnd: string;
   submittedAt: Date | null;
   aiState: (typeof audits.aiState.enumValues)[number] | null;
@@ -69,6 +110,7 @@ export async function listAuditorAudits(orgId: string, auditorId: string): Promi
       token: audits.token,
       name: audits.name,
       status: audits.status,
+      periodStart: audits.periodStart,
       periodEnd: audits.periodEnd,
       submittedAt: audits.submittedAt,
       aiState: audits.aiState,
@@ -99,6 +141,7 @@ export async function listAuditorAudits(orgId: string, auditorId: string): Promi
 
   return rows.map((r) => ({
     ...r,
+    periodStart: r.periodStart ?? r.periodEnd,
     itemsDone: progress.get(r.id)?.done ?? 0,
     itemsTotal: progress.get(r.id)?.total ?? 0,
   }));
@@ -107,6 +150,7 @@ export async function listAuditorAudits(orgId: string, auditorId: string): Promi
 export type AuditDetail = {
   id: string;
   status: (typeof audits.status.enumValues)[number];
+  periodStart: string;
   periodEnd: string;
   outletName: string;
   templateName: string;
@@ -120,6 +164,7 @@ export async function getAuditForAuditor(orgId: string, auditorId: string, audit
     .select({
       id: audits.id,
       status: audits.status,
+      periodStart: audits.periodStart,
       periodEnd: audits.periodEnd,
       outletName: outlets.name,
       templateName: templates.name,
@@ -130,7 +175,8 @@ export async function getAuditForAuditor(orgId: string, auditorId: string, audit
     .where(and(eq(audits.id, auditId), eq(audits.orgId, orgId), eq(audits.auditorId, auditorId)))
     .limit(1);
 
-  return row ?? null;
+  if (!row) return null;
+  return { ...row, periodStart: row.periodStart ?? row.periodEnd };
 }
 
 // B2 — the audit's own metric-def snapshot (cloned onto it at assign, A5), mapped from

@@ -1,4 +1,5 @@
 import { AuditorShell } from '@/components/ui/AuditorShell';
+import { BrandMark } from '@/components/ui/BrandMark';
 import { AuditorLoginForm } from './AuditorLoginForm';
 
 // B1 — auditor sign-in (screen key `login`). Wrong credentials keep the email and
@@ -17,8 +18,8 @@ export default function AuditorLoginPage() {
           textAlign: 'center',
         }}
       >
-        <div style={{ fontFamily: 'var(--font-ui-title)', fontSize: 'var(--text-login-title)', fontWeight: 600, marginBottom: 6 }}>
-          F&amp;B Controller
+        <div style={{ marginBottom: 'var(--space-6)' }}>
+          <BrandMark size="login" />
         </div>
         <div style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 'var(--space-11)' }}>Auditor sign in</div>
         <AuditorLoginForm />

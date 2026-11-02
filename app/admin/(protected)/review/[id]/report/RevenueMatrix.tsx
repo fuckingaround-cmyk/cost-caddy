@@ -9,8 +9,8 @@ export function RevenueMatrix({ draft }: { draft: FinancialReportDraft }) {
 
   return (
     <div data-avoid="" data-gap="" style={{ border: '1px solid var(--r-border)', borderRadius: 10, overflow: 'hidden', background: '#fff', boxShadow: 'var(--shadow-card)' }}>
-      <div style={{ background: 'var(--navy-050)', borderBottom: '1px solid var(--r-border)', padding: '12px 16px' }}>
-        <h3 style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--navy-700)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <div style={{ background: 'var(--brand-tint)', borderBottom: '1px solid var(--r-border)', padding: '12px 16px' }}>
+        <h3 style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Sales &amp; Per-Customer Revenue Matrix
         </h3>
         <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--r-ink-2)' }}>
@@ -34,8 +34,8 @@ export function RevenueMatrix({ draft }: { draft: FinancialReportDraft }) {
                   key={`${depth}-${r.label}`}
                   style={{
                     borderBottom: isTotal ? undefined : '1px solid var(--r-border)',
-                    borderTop: isTotal ? '2px solid var(--navy-700)' : undefined,
-                    background: isTotal ? 'var(--navy-050)' : i % 2 === 1 ? 'var(--r-surface-alt-2)' : 'transparent',
+                    borderTop: isTotal ? '2px solid var(--brand)' : undefined,
+                    background: isTotal ? 'var(--brand-tint)' : i % 2 === 1 ? 'var(--r-surface-alt-2)' : 'transparent',
                     fontWeight: isTotal ? 700 : 400,
                   }}
                 >
@@ -53,7 +53,7 @@ export function RevenueMatrix({ draft }: { draft: FinancialReportDraft }) {
                       textAlign: 'right',
                       fontFamily: 'var(--font-report-mono)',
                       fontWeight: 700,
-                      color: 'var(--navy-700)',
+                      color: 'var(--brand)',
                       fontSize: isTotal ? 14 : 12.5,
                     }}
                   >

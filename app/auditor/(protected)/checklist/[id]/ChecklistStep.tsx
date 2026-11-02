@@ -29,7 +29,7 @@ export interface ChecklistItemState extends AuditItemRow {
 }
 
 const CHECK_ICON = (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--navy-700)" strokeWidth="3">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="3">
     <path d="M4 12l5 5L20 6" />
   </svg>
 );
@@ -197,9 +197,9 @@ export function ChecklistStep({
                     width: 22,
                     height: 22,
                     borderRadius: 'var(--radius-control)',
-                    background: 'var(--navy-chip)',
-                    border: '1px solid var(--navy-border-soft-1)',
-                    color: 'var(--navy-700)',
+                    background: 'var(--brand-tint)',
+                    border: '1px solid var(--brand-border-soft)',
+                    color: 'var(--brand)',
                     fontSize: 11,
                     fontWeight: 700,
                     display: 'flex',
@@ -287,9 +287,9 @@ function ChecklistItemRow({
                   flex: 1,
                   minHeight: 44,
                   padding: 10,
-                  border: item.status === s ? '1px solid var(--navy-700)' : '1px solid var(--border)',
+                  border: item.status === s ? '1px solid var(--brand)' : '1px solid var(--border)',
                   borderRadius: 'var(--radius-control)',
-                  background: item.status === s ? 'var(--navy-chip)' : 'var(--surface)',
+                  background: item.status === s ? 'var(--brand-tint)' : 'var(--surface)',
                   fontSize: 13,
                   fontWeight: item.status === s ? 700 : 500,
                   cursor: 'pointer',

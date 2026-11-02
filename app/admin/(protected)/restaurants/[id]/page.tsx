@@ -7,6 +7,7 @@ import { activeAudits, auditHistory, listOutletAudits, submittedAudits } from '@
 import { listTemplates } from '@/lib/queries/templates';
 import { listActiveAuditors } from '@/lib/queries/auditors';
 import { listOutletReports, periodMonthKey } from '@/lib/queries/reports';
+import { formatPeriodRange } from '@/lib/dates';
 import { AuditsHeader } from './AuditsHeader';
 import { AuditActions } from './AuditActions';
 import { RestaurantHeader } from './RestaurantHeader';
@@ -68,7 +69,7 @@ export default async function RestaurantDetailPage({
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 600 }}>{a.name || a.templateName}</div>
                     <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>
-                      Auditor {a.auditorName} · Period {a.periodEnd}
+                      Auditor {a.auditorName} · {formatPeriodRange(a.periodStart, a.periodEnd)}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
@@ -98,7 +99,7 @@ export default async function RestaurantDetailPage({
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>{a.name || a.templateName}</div>
                   <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>
-                    Auditor {a.auditorName} · Period {a.periodEnd}
+                    Auditor {a.auditorName} · {formatPeriodRange(a.periodStart, a.periodEnd)}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
@@ -107,8 +108,8 @@ export default async function RestaurantDetailPage({
                   href={`/admin/review/${a.id}`}
                   style={{
                     padding: '9px 14px',
-                    border: '1px solid var(--navy-700)',
-                    background: 'var(--navy-700)',
+                    border: '1px solid var(--brand)',
+                    background: 'var(--brand)',
                     color: '#fff',
                     borderRadius: 'var(--radius-control)',
                     fontSize: 12,
@@ -141,14 +142,14 @@ export default async function RestaurantDetailPage({
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>{a.name || a.templateName}</div>
                   <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>
-                    Auditor {a.auditorName} · Period {a.periodEnd}
+                    Auditor {a.auditorName} · {formatPeriodRange(a.periodStart, a.periodEnd)}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <StatusChip status={a.status} />
                   <Link
                     href={`/admin/review/${a.id}/report`}
-                    style={{ fontSize: 12, textDecoration: 'underline', color: 'var(--navy-700)' }}
+                    style={{ fontSize: 12, textDecoration: 'underline', color: 'var(--brand)' }}
                   >
                     View report
                   </Link>
@@ -177,9 +178,9 @@ export default async function RestaurantDetailPage({
                         fontSize: 13,
                         fontWeight: 600,
                         textDecoration: 'none',
-                        background: isSelected ? 'var(--navy-700)' : 'var(--surface)',
+                        background: isSelected ? 'var(--brand)' : 'var(--surface)',
                         color: isSelected ? '#fff' : 'var(--ink-3)',
-                        border: `1px solid ${isSelected ? 'var(--navy-700)' : 'var(--border)'}`,
+                        border: `1px solid ${isSelected ? 'var(--brand)' : 'var(--border)'}`,
                       }}
                     >
                       {m.label}
@@ -215,7 +216,7 @@ export default async function RestaurantDetailPage({
                     href={`/admin/restaurants/${id}/mtd/${selectedMonth}`}
                     style={{
                       padding: '11px 18px',
-                      background: 'var(--navy-700)',
+                      background: 'var(--brand)',
                       color: '#fff',
                       borderRadius: 'var(--radius-control)',
                       fontSize: 13,
@@ -252,8 +253,8 @@ export default async function RestaurantDetailPage({
                         textTransform: 'uppercase',
                         padding: '4px 8px',
                         borderRadius: 'var(--radius-pill)',
-                        background: 'var(--navy-chip)',
-                        color: 'var(--navy-700)',
+                        background: 'var(--brand-tint)',
+                        color: 'var(--brand)',
                       }}
                     >
                       v{r.version}
@@ -274,7 +275,7 @@ export default async function RestaurantDetailPage({
                       borderRadius: 'var(--radius-control)',
                       fontSize: 12,
                       fontWeight: 600,
-                      color: 'var(--navy-700)',
+                      color: 'var(--brand)',
                       textDecoration: 'none',
                       whiteSpace: 'nowrap',
                     }}
@@ -303,21 +304,6 @@ function monthOptions(periodStarts: string[]): { key: string; label: string }[] 
       key,
       label: new Date(`${key}-15T00:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
     }));
-}
-
-// 'Jul 1–15, 2026' for a range, or a single formatted date when the audit covers one day.
-function formatPeriodRange(periodStart: string, periodEnd: string): string {
-  const start = new Date(`${periodStart}T00:00:00`);
-  const end = new Date(`${periodEnd}T00:00:00`);
-  if (periodStart === periodEnd) {
-    return start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  }
-  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
-  const startLabel = sameMonth
-    ? start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    : start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  const endLabel = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  return `${startLabel}–${endLabel}`;
 }
 
 function AuditGroup({ title, empty, children }: { title: string; empty: string; children: React.ReactNode }) {
@@ -349,8 +335,8 @@ function StatusChip({ status }: { status: string }) {
   const map: Record<string, { bg: string; color: string; border: string; label: string }> = {
     assigned: { bg: 'var(--surface)', color: 'var(--ink-3)', border: 'var(--border)', label: 'ASSIGNED' },
     'in-progress': { bg: '#fffbeb', color: '#b45309', border: '#fde68a', label: 'IN PROGRESS' },
-    submitted: { bg: 'var(--navy-chip)', color: 'var(--navy-700)', border: 'var(--navy-border)', label: 'SUBMITTED' },
-    published: { bg: 'var(--navy-700)', color: 'var(--surface)', border: 'var(--navy-700)', label: 'PUBLISHED' },
+    submitted: { bg: 'var(--brand-tint)', color: 'var(--brand)', border: 'var(--brand-border)', label: 'SUBMITTED' },
+    published: { bg: 'var(--brand)', color: 'var(--surface)', border: 'var(--brand)', label: 'PUBLISHED' },
   };
   const chip = map[status] ?? map.assigned;
   return (

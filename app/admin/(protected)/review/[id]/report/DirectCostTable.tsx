@@ -15,8 +15,8 @@ export function DirectCostTable({ breakdown }: { breakdown: CostingBreakdown }) 
 
   return (
     <div style={{ border: '1px solid var(--r-border)', borderRadius: 10, overflow: 'hidden', background: '#fff', boxShadow: 'var(--shadow-card)' }}>
-      <div style={{ background: 'var(--navy-050)', borderBottom: '1px solid var(--r-border)', padding: '12px 16px' }}>
-        <h3 style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--navy-700)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <div style={{ background: 'var(--brand-tint)', borderBottom: '1px solid var(--r-border)', padding: '12px 16px' }}>
+        <h3 style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Direct Cost by Category
         </h3>
       </div>
@@ -30,9 +30,9 @@ export function DirectCostTable({ breakdown }: { breakdown: CostingBreakdown }) 
               </td>
             </tr>
           ))}
-          <tr style={{ borderTop: '2px solid var(--navy-700)', background: 'var(--navy-050)', fontWeight: 700 }}>
-            <td style={{ padding: '12px 12px 12px 16px', fontSize: 12.5, color: 'var(--navy-700)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total</td>
-            <td style={{ padding: '12px 16px 12px 12px', textAlign: 'right', fontFamily: 'var(--font-report-mono)', fontSize: 13, color: 'var(--navy-700)' }}>
+          <tr style={{ borderTop: '2px solid var(--brand)', background: 'var(--brand-tint)', fontWeight: 700 }}>
+            <td style={{ padding: '12px 12px 12px 16px', fontSize: 12.5, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total</td>
+            <td style={{ padding: '12px 16px 12px 12px', textAlign: 'right', fontFamily: 'var(--font-report-mono)', fontSize: 13, color: 'var(--brand)' }}>
               {money(breakdown.netFnbTotal)}
             </td>
           </tr>

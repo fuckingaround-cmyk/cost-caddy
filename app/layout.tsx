@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
-import { Inter, Newsreader, Inter_Tight, IBM_Plex_Mono } from "next/font/google";
+import { Space_Grotesk, IBM_Plex_Mono, Inter_Tight } from "next/font/google";
 import "./globals.css";
 
-// App UI surface
-const interUI = Inter({
-  variable: "--font-ui-body",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-const newsreader = Newsreader({
+// App UI surface — Cost Caddy brand: Space Grotesk for display/headings/nav/
+// buttons, IBM Plex Mono for body/labels/metadata (DESIGN.md Part A).
+const spaceGrotesk = Space_Grotesk({
   variable: "--font-ui-title",
   subsets: ["latin"],
-  weight: ["500", "600"],
+  weight: ["500", "600", "700"],
+});
+const plexMonoUI = IBM_Plex_Mono({
+  variable: "--font-ui-body",
+  subsets: ["latin"],
+  weight: ["400", "500"],
 });
 
 // Report surface — a separate type system, never mixed with App UI
@@ -27,7 +28,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "F&B Controller",
+  title: "Cost Caddy",
   description: "F&B audit platform — auditor and client portals",
 };
 
@@ -35,7 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${interUI.variable} ${newsreader.variable} ${interTight.variable} ${plexMono.variable}`}
+      className={`${spaceGrotesk.variable} ${plexMonoUI.variable} ${interTight.variable} ${plexMono.variable}`}
     >
       <head>
         {/* Report-surface icons only — never mix with App UI's inline stroked SVGs.

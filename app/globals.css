@@ -31,6 +31,88 @@ a {
   text-decoration: none;
 }
 
+/* Interactive baseline — hover/press/focus feedback for every button, link and
+   role="button" element app-wide, without touching each one-off inline-styled
+   control. filter/transform/box-shadow are layers inline styles never set, so
+   they apply even on top of an inline background/color (DESIGN.md Part A
+   "Interaction motion"). */
+a,
+button,
+[role="button"],
+input[type="checkbox"],
+input[type="radio"],
+select {
+  transition: filter var(--transition-fast) var(--ease-standard),
+    transform var(--transition-fast) var(--ease-standard),
+    box-shadow var(--transition-base) var(--ease-standard),
+    border-color var(--transition-base) var(--ease-standard);
+}
+
+a:hover {
+  color: var(--ink-hover);
+}
+
+a:hover,
+button:not(:disabled):not([aria-disabled="true"]):hover,
+[role="button"]:not([aria-disabled="true"]):hover {
+  filter: brightness(var(--hover-brightness));
+  transform: scale(var(--hover-scale));
+}
+
+a:active,
+button:not(:disabled):not([aria-disabled="true"]):active,
+[role="button"]:not([aria-disabled="true"]):active {
+  transform: scale(var(--press-scale));
+  filter: none;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-control);
+}
+
+/* Card-row links — the "whole row/card is the link" pattern (restaurant list,
+   template list, …). Overrides the plain-link colour dim above so the row's
+   own heading colours stay put, and adds a visible brand-tinted hover + a
+   stronger zoom so the row unmistakably reads as interactive (DESIGN.md Part A
+   "Interaction motion", rebrand liveliness pass). */
+a.cardLink:hover {
+  color: inherit;
+  filter: none;
+  background: var(--brand-tint);
+  box-shadow: 0 0 0 1px var(--brand-border-soft), var(--shadow-brand-hover);
+  transform: scale(var(--hover-scale));
+}
+
+a.cardLink:active {
+  transform: scale(var(--press-scale));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a,
+  button,
+  [role="button"],
+  input[type="checkbox"],
+  input[type="radio"],
+  select {
+    transition: none;
+  }
+  a:hover,
+  button:hover,
+  [role="button"]:hover,
+  a:active,
+  button:active,
+  [role="button"]:active {
+    transform: none;
+  }
+}
+
 /* Print — report + spec are print-first (letter, 0.6in margin) */
 @page {
   size: letter landscape;
@@ -88,6 +170,14 @@ a {
   }
   [data-noprint] {
     display: none !important;
+  }
+  /* Hover/press motion is a screen-only affordance; transitions never render
+     in a static snapshot anyway, but drop them explicitly. Leave `transform`
+     alone — CompositionDonut relies on a static rotate() for layout, not
+     hover, and no :hover/:active ever matches during a headless PDF render. */
+  * {
+    transition: none !important;
+    filter: none !important;
   }
   [data-avoid] {
     page-break-inside: avoid;

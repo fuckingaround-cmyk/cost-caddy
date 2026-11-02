@@ -3,6 +3,7 @@ import { posFindingsKey } from '@/lib/evidence/types';
 import { notFound, redirect } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
 import { getAuditForReview, getEvidenceFindings, listOperationalFiles, type ReviewAuditDetail } from '@/lib/queries/review';
+import { formatPeriodRange } from '@/lib/dates';
 import { getAuditItemFiles, getAuditItems, getAuditMetricDefs, getAuditMetricValues } from '@/lib/queries/audits';
 import { metricSections } from '@/lib/calc';
 import { createSignedUrl } from '@/lib/storage';
@@ -17,7 +18,7 @@ import { FinancialSummaryPanel } from './FinancialSummaryPanel';
 export const maxDuration = 60;
 
 const RESTAURANT_ICON = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--navy-700)" strokeWidth="1.8" style={{ flexShrink: 0 }}>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="1.8" style={{ flexShrink: 0 }}>
     <path d="M3 9l1-5h16l1 5" />
     <path d="M4 9v10a1 1 0 001 1h14a1 1 0 001-1V9" />
     <path d="M9 20v-6h6v6" />
@@ -133,7 +134,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             <span>{audit.outletName}</span>
           </div>
           <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
-            Auditor: {audit.auditorName} · Period {audit.periodEnd}
+            Auditor: {audit.auditorName} · {formatPeriodRange(audit.periodStart ?? audit.periodEnd, audit.periodEnd)}
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -165,7 +166,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
         <div
           style={{
             padding: '10px 13px',
-            background: 'var(--navy-700)',
+            background: 'var(--brand)',
             color: '#fff',
             display: 'flex',
             justifyContent: 'space-between',
@@ -219,7 +220,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
 
       {reviewItems.some((it) => it.section === 'pos_report') && (
         <>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--navy-700)', padding: '26px 0 4px' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--brand)', padding: '26px 0 4px' }}>
             POS Reports
           </div>
           {reviewItems

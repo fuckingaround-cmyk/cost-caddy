@@ -1,6 +1,6 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@/db';
-import { audits, reports, templates } from '@/db/schema';
+import { audits, mtdReports, reports, templates } from '@/db/schema';
 
 export type OutletReportRow = {
   id: string;
@@ -53,4 +53,21 @@ export async function listOutletReports(orgId: string, outletId: string): Promis
 // and the MTD report route so both bucket reports into the same month the same way.
 export function periodMonthKey(periodStart: string): string {
   return periodStart.slice(0, 7);
+}
+
+export type MtdLockedVersionRow = {
+  version: number;
+  publishedAt: Date;
+  pdfPath: string | null;
+};
+
+// ADR-0021 — every locked MTD snapshot for this outlet+month, newest first. mtdReports
+// rows are never mutated or deleted (same invariant as `reports`), so history is just
+// this list; the caller signs pdfPath into a short-lived URL per row.
+export async function listLockedMtdVersions(orgId: string, outletId: string, month: string): Promise<MtdLockedVersionRow[]> {
+  return db
+    .select({ version: mtdReports.version, publishedAt: mtdReports.publishedAt, pdfPath: mtdReports.pdfPath })
+    .from(mtdReports)
+    .where(and(eq(mtdReports.orgId, orgId), eq(mtdReports.outletId, outletId), eq(mtdReports.month, month)))
+    .orderBy(desc(mtdReports.version));
 }

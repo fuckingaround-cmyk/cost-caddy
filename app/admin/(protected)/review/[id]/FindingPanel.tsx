@@ -113,9 +113,9 @@ export function FindingPanel({ itemId, auditId, finding }: { itemId: string; aud
                 onClick={() => setSeverity(s)}
                 style={{
                   padding: '8px 14px',
-                  border: severity === s ? '1px solid var(--navy-700)' : '1px solid var(--border)',
+                  border: severity === s ? '1px solid var(--brand)' : '1px solid var(--border)',
                   borderRadius: 'var(--radius-control)',
-                  background: severity === s ? 'var(--navy-chip)' : 'var(--surface)',
+                  background: severity === s ? 'var(--brand-tint)' : 'var(--surface)',
                   fontSize: 13,
                   fontWeight: severity === s ? 700 : 500,
                   cursor: 'pointer',
@@ -148,7 +148,7 @@ export function FindingPanel({ itemId, auditId, finding }: { itemId: string; aud
               type="button"
               disabled={pending}
               onClick={save}
-              style={{ padding: '8px 16px', border: '1px solid var(--navy-700)', background: 'var(--navy-700)', color: '#fff', borderRadius: 'var(--radius-control)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              style={{ padding: '8px 16px', border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', borderRadius: 'var(--radius-control)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
             >
               {pending ? 'Saving…' : 'Save finding'}
             </button>

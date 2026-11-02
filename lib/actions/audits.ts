@@ -17,6 +17,8 @@ import {
 import { requireRole } from '@/lib/auth';
 import { deleteStoredFiles, removeAuditsInTx } from '@/lib/audits/removeAudits';
 import { POS_REPORT_LABELS, isPosReportType } from '@/lib/evidence/types';
+import { findOverlappingAudit } from '@/lib/queries/audits';
+import { formatPeriodRange } from '@/lib/dates';
 
 export type CreateAuditState = { error?: string; created?: boolean };
 
@@ -44,6 +46,15 @@ export async function createAudit(
   }
   if (!periodEnd && !periodStart) {
     return { error: 'Set an audit period' };
+  }
+
+  const effectiveEnd = periodEnd ?? periodStart!;
+  const effectiveStart = periodStart ?? effectiveEnd;
+  const conflict = await findOverlappingAudit(admin.orgId, outletId, effectiveStart, effectiveEnd);
+  if (conflict) {
+    return {
+      error: `This period overlaps "${conflict.name || 'an existing audit'}" (${formatPeriodRange(conflict.periodStart, conflict.periodEnd)}) — adjust the dates.`,
+    };
   }
 
   await db.transaction(async (tx) => {

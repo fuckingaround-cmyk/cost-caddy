@@ -6,6 +6,12 @@ Status: accepted · Date: 2026-09-13
 > later renamed to `periodStart`/`periodEnd` to match how this ADR already used them — a coverage period,
 > not a deadline. The renamed columns hold the same data; nothing in this ADR's decision changed.
 
+> Note (2026-11-02, ADR-0021): a persisted, versioned MTD PDF ("Lock & Publish MTD") was added on top of
+> this ADR's live-recompute page — see ADR-0021. The live page itself is unchanged; this note only flags
+> that the "not downloadable as a fixed artifact" consequence below no longer holds. ADR-0021 also adds a
+> hard block on overlapping audit periods and stop-at-first-gap MTD inclusion, neither of which existed
+> when this ADR was written.
+
 ## Context
 `Super Admin Flow.dc.html`'s restaurant-detail Reports tab draws a month picker with a "View MTD report"
 card above the list of individual audit reports — but its data (`REPORT_MONTHS`/`MONTH_REPORTS`, the

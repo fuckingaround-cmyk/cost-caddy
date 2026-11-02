@@ -25,7 +25,7 @@ export default async function ReportDocPage({ params }: { params: Promise<{ id: 
           position: 'sticky',
           top: 0,
           zIndex: 50,
-          background: 'var(--navy-700)',
+          background: 'var(--brand)',
           color: '#fff',
           padding: '10px 20px',
           display: 'flex',
@@ -42,7 +42,7 @@ export default async function ReportDocPage({ params }: { params: Promise<{ id: 
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
-              background: 'var(--navy-500)',
+              background: 'var(--brand-hover)',
               padding: '2px 10px',
               borderRadius: 4,
               fontSize: 11,
@@ -52,7 +52,7 @@ export default async function ReportDocPage({ params }: { params: Promise<{ id: 
           >
             {publish ? `PUBLISHED v${publish.version}` : 'REPORT DRAFT'}
           </span>
-          <span style={{ color: 'var(--navy-border-soft-2)' }}>
+          <span style={{ color: 'var(--brand-border-soft)' }}>
             {vm.audit.outletName}{vm.audit.outletCity ? ` · ${vm.audit.outletCity}` : ''}
           </span>
         </div>
@@ -62,7 +62,7 @@ export default async function ReportDocPage({ params }: { params: Promise<{ id: 
           style={{
             fontSize: 12,
             fontWeight: 600,
-            color: 'var(--navy-700)',
+            color: 'var(--brand)',
             background: '#fff',
             padding: '8px 14px',
             borderRadius: 6,

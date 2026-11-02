@@ -19,7 +19,7 @@ const STATUS_CHIP: Record<ItemStatus, { bg: string; color: string; border: strin
 };
 
 const CHECK_ICON = (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--navy-700)" strokeWidth="3">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="3">
     <path d="M4 12l5 5L20 6" />
   </svg>
 );
@@ -154,9 +154,9 @@ export function ReviewItemRow({ item, auditId }: { item: ReviewItem; auditId: st
                 onClick={() => setStatus(s)}
                 style={{
                   padding: '8px 14px',
-                  border: status === s ? '1px solid var(--navy-700)' : '1px solid var(--border)',
+                  border: status === s ? '1px solid var(--brand)' : '1px solid var(--border)',
                   borderRadius: 'var(--radius-control)',
-                  background: status === s ? 'var(--navy-chip)' : 'var(--surface)',
+                  background: status === s ? 'var(--brand-tint)' : 'var(--surface)',
                   fontSize: 13,
                   fontWeight: status === s ? 700 : 500,
                   cursor: 'pointer',
@@ -199,7 +199,7 @@ export function ReviewItemRow({ item, auditId }: { item: ReviewItem; auditId: st
               type="button"
               disabled={pending}
               onClick={save}
-              style={{ padding: '8px 16px', border: '1px solid var(--navy-700)', background: 'var(--navy-700)', color: '#fff', borderRadius: 'var(--radius-control)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              style={{ padding: '8px 16px', border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', borderRadius: 'var(--radius-control)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
             >
               {pending ? 'Saving…' : 'Save correction'}
             </button>

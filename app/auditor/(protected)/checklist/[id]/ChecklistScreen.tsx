@@ -188,12 +188,12 @@ export function ChecklistScreen({
                   alignItems: 'baseline',
                   gap: '4px 10px',
                   padding: '8px 12px',
-                  background: 'var(--navy-chip)',
-                  border: '1px solid var(--navy-border-soft-1)',
+                  background: 'var(--brand-tint)',
+                  border: '1px solid var(--brand-border-soft)',
                   borderRadius: 'var(--radius-control)',
                 }}
               >
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--navy-700)' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--brand)' }}>
                   {sec.title}
                 </div>
                 {sec.note && <div style={{ fontSize: 11, color: 'var(--hint-2)' }}>{sec.note}</div>}
@@ -310,10 +310,10 @@ export function ChecklistScreen({
             disabled={pending}
             style={{
               padding: '12px 20px',
-              border: '1px solid var(--navy-700)',
+              border: '1px solid var(--brand)',
               borderRadius: 'var(--radius-control)',
               background: 'var(--surface)',
-              color: 'var(--navy-700)',
+              color: 'var(--brand)',
               fontSize: 13,
               fontWeight: 600,
               cursor: pending ? 'default' : 'pointer',
@@ -338,7 +338,7 @@ export function ChecklistScreen({
             borderRadius: 'var(--radius-control)',
             fontSize: 14,
             fontWeight: 600,
-            background: complete ? 'var(--navy-700)' : 'var(--surface-alt-1)',
+            background: complete ? 'var(--brand)' : 'var(--surface-alt-1)',
             color: complete ? 'var(--surface)' : 'var(--muted)',
             cursor: 'pointer',
           }}
@@ -401,9 +401,9 @@ export function ChecklistScreen({
                 disabled={submitting}
                 style={{
                   padding: '10px 16px',
-                  border: '1px solid var(--navy-700)',
+                  border: '1px solid var(--brand)',
                   borderRadius: 'var(--radius-control)',
-                  background: 'var(--navy-700)',
+                  background: 'var(--brand)',
                   color: 'var(--surface)',
                   fontSize: 13,
                   fontWeight: 600,
@@ -432,9 +432,9 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
         borderRadius: 'var(--radius-control)',
         fontSize: 13,
         fontWeight: 600,
-        background: active ? 'var(--navy-700)' : 'var(--surface)',
+        background: active ? 'var(--brand)' : 'var(--surface)',
         color: active ? 'var(--surface)' : 'var(--ink-3)',
-        border: active ? '1px solid var(--navy-700)' : '1px solid var(--border)',
+        border: active ? '1px solid var(--brand)' : '1px solid var(--border)',
         cursor: 'pointer',
       }}
     >

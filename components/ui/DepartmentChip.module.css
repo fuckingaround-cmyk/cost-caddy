@@ -2,9 +2,9 @@
   width: 24px;
   height: 24px;
   border-radius: var(--radius-control);
-  background: var(--navy-chip);
-  border: 1px solid var(--navy-border-soft-1);
-  color: var(--navy-700);
+  background: var(--brand-tint);
+  border: 1px solid var(--brand-border-soft);
+  color: var(--brand);
   font-size: 11px;
   font-weight: 700;
   display: flex;

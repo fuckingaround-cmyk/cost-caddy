@@ -19,6 +19,7 @@ export default async function TemplatesPage() {
         </div>
         <Link
           href="/admin/templates/new"
+          className="cardLink"
           style={{
             padding: '10px 16px',
             border: '1px solid var(--ink)',
@@ -26,6 +27,7 @@ export default async function TemplatesPage() {
             background: 'var(--surface)',
             fontSize: 13,
             fontWeight: 600,
+            fontFamily: 'var(--font-ui-title)',
             textDecoration: 'none',
             color: 'var(--ink)',
           }}
@@ -51,9 +53,9 @@ export default async function TemplatesPage() {
           >
             <div style={{ padding: '15px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
               <Link href={`/admin/templates/${t.id}`} style={{ minWidth: 0, textDecoration: 'none', color: 'inherit', flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--navy-900)' }}>{t.name}</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--brand-active)' }}>{t.name}</div>
                 <div style={{ fontSize: 12, color: 'var(--hint)', marginTop: 3 }}>
-                  Reusable across restaurants · <span style={{ fontWeight: 600, color: 'var(--navy-700)' }}>Edit template &rsaquo;</span>
+                  Reusable across restaurants · <span style={{ fontWeight: 600, color: 'var(--brand)' }}>Edit template &rsaquo;</span>
                 </div>
               </Link>
               <TemplateActions templateId={t.id} auditCount={t.auditCount} />
@@ -76,7 +78,7 @@ function Stat({ label, value }: { label: string; value: number }) {
       <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--status-neutral-fg-2)' }}>
         {label}
       </div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--navy-900)', marginTop: 2 }}>{value}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--brand-active)', marginTop: 2 }}>{value}</div>
     </div>
   );
 }

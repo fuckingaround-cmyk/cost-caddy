@@ -32,9 +32,9 @@ export function PublishButton({ auditId }: { auditId: string }) {
         onClick={() => setConfirming(true)}
         style={{
           padding: '9px 14px',
-          border: '1px solid var(--navy-700)',
+          border: '1px solid var(--brand)',
           background: '#fff',
-          color: 'var(--navy-700)',
+          color: 'var(--brand)',
           borderRadius: 'var(--radius-control)',
           fontSize: 12,
           fontWeight: 600,
@@ -55,8 +55,8 @@ export function PublishButton({ auditId }: { auditId: string }) {
         onClick={run}
         style={{
           padding: '9px 14px',
-          border: '1px solid var(--navy-700)',
-          background: 'var(--navy-700)',
+          border: '1px solid var(--brand)',
+          background: 'var(--brand)',
           color: '#fff',
           borderRadius: 'var(--radius-control)',
           fontSize: 12,

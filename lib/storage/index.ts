@@ -1,6 +1,6 @@
 import { getStorageClient } from './client';
 
-export { auditItemFilePath, operationalFilePath, reportFilePath } from './paths';
+export { auditItemFilePath, mtdReportFilePath, operationalFilePath, reportFilePath } from './paths';
 
 // One private bucket for photos, PDFs and uploads (F5) — never public; every read goes
 // through a signed URL that expires. Exception: report evidence photos use a long-lived

@@ -212,7 +212,7 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
         </div>
 
         <div style={{ padding: '0 0 4px 0' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--navy-700)' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--brand)' }}>
             Part 1 · Metrics
           </div>
           <div style={{ fontSize: 12, color: 'var(--hint)', marginTop: 4 }}>
@@ -228,7 +228,7 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 18px', borderBottom: '1px solid var(--surface-alt-1)' }}>
                   <CategoryIcon catKey={cat.key} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--navy-900)' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--brand-active)' }}>
                       {cat.title}
                     </div>
                     <div style={{ fontSize: 11.5, color: 'var(--hint)', marginTop: 3 }}>{cat.hint}</div>
@@ -239,7 +239,7 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
                   <button
                     type="button"
                     onClick={() => addMetric(cat.key)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: 'var(--navy-700)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: 'var(--brand)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
                   >
                     <PlusIcon />
                     Add Metric to {cat.title}
@@ -315,8 +315,8 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
                       key={d.label}
                       style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: 'var(--surface-calculated)', border: '1px dashed var(--border-dashed)', borderRadius: 'var(--radius-card)' }}
                     >
-                      <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 700, color: 'var(--navy-900)' }}>{d.label}</div>
-                      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 4, background: 'var(--navy-050)', color: 'var(--navy-700)', whiteSpace: 'nowrap' }}>
+                      <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 700, color: 'var(--brand-active)' }}>{d.label}</div>
+                      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 4, background: 'var(--brand-tint)', color: 'var(--brand)', whiteSpace: 'nowrap' }}>
                         {d.badge}
                       </div>
                       <div style={{ width: 170, flexShrink: 0, padding: '8px 0', fontSize: 11.5, fontStyle: 'italic', color: 'var(--status-neutral-fg-2)', textAlign: 'right' }}>
@@ -329,13 +329,13 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
               {cat.after.map((d) => (
                 <div
                   key={d.label}
-                  style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'var(--navy-050)', border: '1px solid var(--navy-border-soft-2)', borderRadius: 'var(--radius-card)' }}
+                  style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'var(--brand-tint)', border: '1px solid var(--brand-border-soft)', borderRadius: 'var(--radius-card)' }}
                 >
-                  <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 700, color: 'var(--navy-700)' }}>{d.label}</div>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 4, background: 'var(--navy-700)', color: 'var(--surface)' }}>
+                  <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 700, color: 'var(--brand)' }}>{d.label}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 4, background: 'var(--brand)', color: 'var(--surface)' }}>
                     {d.badge}
                   </div>
-                  <div style={{ width: 170, flexShrink: 0, padding: '8px 0', fontSize: 11.5, fontStyle: 'italic', color: 'var(--navy-500)', textAlign: 'right' }}>
+                  <div style={{ width: 170, flexShrink: 0, padding: '8px 0', fontSize: 11.5, fontStyle: 'italic', color: 'var(--brand-hover)', textAlign: 'right' }}>
                     Auto-sum · no input
                   </div>
                 </div>
@@ -346,7 +346,7 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', padding: '30px 0 10px 0' }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--navy-700)' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--brand)' }}>
               Part 2 · Department-wise checklist
             </div>
             <div style={{ fontSize: 12, color: 'var(--hint)', marginTop: 4 }}>
@@ -371,11 +371,11 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
                   onChange={(e) => renameDept(d.cid, e.target.value)}
                   onBlur={() => commitDeptCode(d.cid)}
                   placeholder="Department name (e.g. Security)"
-                  style={{ flex: 1, minWidth: 0, padding: '4px 7px', border: '1px solid transparent', borderRadius: 6, fontSize: 13.5, fontWeight: 700, background: 'transparent', color: 'var(--navy-900)' }}
+                  style={{ flex: 1, minWidth: 0, padding: '4px 7px', border: '1px solid transparent', borderRadius: 6, fontSize: 13.5, fontWeight: 700, background: 'transparent', color: 'var(--brand-active)' }}
                 />
                 <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', color: 'var(--status-neutral-fg-2)', flexShrink: 0, fontFamily: 'var(--font-ui-mono)' }}>{d.code}</span>
                 <span style={{ fontSize: 11.5, color: 'var(--hint)', whiteSpace: 'nowrap', flexShrink: 0 }}>{d.points.length} points</span>
-                <button type="button" onClick={() => addPoint(d.cid)} style={{ display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: 'var(--navy-700)', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0, cursor: 'pointer' }}>
+                <button type="button" onClick={() => addPoint(d.cid)} style={{ display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: 'var(--brand)', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0, cursor: 'pointer' }}>
                   <PlusIcon />
                   Add Checklist Point
                 </button>
@@ -423,14 +423,14 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
         <button
           type="button"
           onClick={addDept}
-          style={{ marginTop: 16, width: '100%', padding: 16, border: '2px dashed var(--border-dashed)', background: 'transparent', borderRadius: 'var(--radius-large)', fontSize: 13, fontWeight: 600, color: 'var(--navy-700)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, cursor: 'pointer' }}
+          style={{ marginTop: 16, width: '100%', padding: 16, border: '2px dashed var(--border-dashed)', background: 'transparent', borderRadius: 'var(--radius-large)', fontSize: 13, fontWeight: 600, color: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, cursor: 'pointer' }}
         >
           <CirclePlusIcon />
           Add Department
         </button>
 
         <div style={{ padding: '30px 0 10px 0' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--navy-700)' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--brand)' }}>
             Part 3 · POS Report
           </div>
           <div style={{ fontSize: 12, color: 'var(--hint)', marginTop: 4 }}>
@@ -473,7 +473,7 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
               type="button"
               onClick={addPosReport}
               disabled={!canAddPos}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: 'var(--navy-700)', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap', cursor: canAddPos ? 'pointer' : 'default', opacity: canAddPos ? 1 : 0.5 }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: 'var(--brand)', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap', cursor: canAddPos ? 'pointer' : 'default', opacity: canAddPos ? 1 : 0.5 }}
             >
               <PlusIcon />
               Add Report
@@ -481,7 +481,7 @@ export function TemplateBuilder({ initial }: { initial: TemplateDetail }) {
           </div>
           {posReports.map((r) => (
             <div key={`${r.reportType}|${r.label}`} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 18px', borderBottom: '1px solid var(--surface-alt-1)' }}>
-              <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--navy-900)' }}>{r.label}</div>
+              <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--brand-active)' }}>{r.label}</div>
               <button type="button" onClick={() => removePosReport(r)} title="Remove report" style={{ border: 'none', background: 'transparent', padding: 5, display: 'flex', cursor: 'pointer' }}>
                 <TrashIcon />
               </button>

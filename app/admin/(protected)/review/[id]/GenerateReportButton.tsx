@@ -23,8 +23,8 @@ export function GenerateReportButton({ auditId, generated }: { auditId: string; 
           alignItems: 'center',
           gap: 7,
           padding: '11px 18px',
-          border: '1px solid var(--navy-700)',
-          background: 'var(--navy-700)',
+          border: '1px solid var(--brand)',
+          background: 'var(--brand)',
           color: '#fff',
           borderRadius: 'var(--radius-control)',
           fontSize: 13,
@@ -46,9 +46,9 @@ export function GenerateReportButton({ auditId, generated }: { auditId: string; 
           letterSpacing: '0.06em',
           padding: '6px 10px',
           borderRadius: 'var(--radius-pill)',
-          background: 'var(--navy-chip)',
-          color: 'var(--navy-700)',
-          border: '1px solid var(--navy-border)',
+          background: 'var(--brand-tint)',
+          color: 'var(--brand)',
+          border: '1px solid var(--brand-border)',
         }}
       >
         REPORT GENERATED
@@ -57,8 +57,8 @@ export function GenerateReportButton({ auditId, generated }: { auditId: string; 
         href={`/admin/review/${auditId}/report`}
         style={{
           padding: '9px 14px',
-          border: '1px solid var(--navy-700)',
-          background: 'var(--navy-700)',
+          border: '1px solid var(--brand)',
+          background: 'var(--brand)',
           color: '#fff',
           borderRadius: 'var(--radius-control)',
           fontSize: 12,

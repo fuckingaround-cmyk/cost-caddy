@@ -17,7 +17,7 @@ export function Icon({
       height={size}
       viewBox="0 0 24 24"
       fill="none"
-      stroke="var(--navy-700)"
+      stroke="var(--brand)"
       strokeWidth={1.8}
       style={{ flexShrink: 0 }}
       {...props}

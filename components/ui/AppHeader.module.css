@@ -12,11 +12,6 @@
   z-index: 20;
 }
 
-.wordmark {
-  font-family: var(--font-ui-title);
-  font-size: var(--text-wordmark);
-  font-weight: 600;
-}
 
 .actions {
   display: flex;

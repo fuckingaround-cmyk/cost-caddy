@@ -77,12 +77,12 @@ export function PosReportSection({ reports }: { reports: PosReport[] }) {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: 12,
-                background: 'var(--navy-050)',
+                background: 'var(--brand-tint)',
                 borderBottom: '1px solid var(--r-border)',
                 padding: '12px 16px',
               }}
             >
-              <h3 style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--navy-700)' }}>{r.label} Report</h3>
+              <h3 style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--brand)' }}>{r.label} Report</h3>
               {chip && (
                 <span
                   style={{

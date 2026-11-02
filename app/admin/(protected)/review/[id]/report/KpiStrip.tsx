@@ -49,7 +49,7 @@ export function KpiStrip({ kpis }: { kpis: FinancialDraftKpis }) {
             gap: 6,
           }}
         >
-          <div style={{ fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: c.last ? 'var(--navy-700)' : 'var(--r-muted)', fontWeight: c.last ? 700 : 600 }}>
+          <div style={{ fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: c.last ? 'var(--brand)' : 'var(--r-muted)', fontWeight: c.last ? 700 : 600 }}>
             {c.label}
           </div>
           <div
@@ -58,7 +58,7 @@ export function KpiStrip({ kpis }: { kpis: FinancialDraftKpis }) {
               fontSize: 21,
               fontWeight: 700,
               fontFamily: 'var(--font-report-mono)',
-              color: c.financial ? 'var(--status-financial-fg)' : c.highlight || c.last ? 'var(--navy-700)' : 'var(--r-ink)',
+              color: c.financial ? 'var(--status-financial-fg)' : c.highlight || c.last ? 'var(--brand)' : 'var(--r-ink)',
               fontVariantNumeric: 'tabular-nums',
             }}
           >

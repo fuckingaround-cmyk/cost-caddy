@@ -141,6 +141,11 @@ AuditItem      { id, code, cat, catCode, label, guidance, freeform,
 OperationalFile { id, auditId, type, period, name, format, storagePath,
                   parseStatus: 'parsed'|'unreadable', coverageSummary? }  // attached in review (C1)
 Report         { auditId, version, findings[], attachments[], token, publishedAt }
+MtdReport      { outletId, month, version, token, publishedAt, pdfPath?, note?,
+                 contributingAuditIds[] }           // ADR-0021 — locked snapshot of an
+                                                     // MTD rollup; the live /mtd/[month]
+                                                     // page still always recomputes fresh
+                                                     // (ADR-0006) regardless of locks
 ```
 
 **Deletes never cascade.** Every FK is `ON DELETE no action`, so removing an audit deletes its children
@@ -257,6 +262,16 @@ now; `EXECUTION.md` R12).
   request-render path, so it doesn't touch Next's own rendering. No "Share" action exists — R12 cut the
   Client Portal, so there's no public destination a share link could point to; R5's "publish separate
   from sharing" holds vacuously rather than by building a link to nowhere (`DESIGN.md` Part B **UX-017**).
+- **MTD lock-and-publish** (`lib/actions/mtdPublish.ts::lockMtdReport`, ADR-0021, amends ADR-0006) is the
+  MTD analog of Publish: it re-derives the outlet+month's current *contiguous* subset via
+  `lib/report/mtdContiguity.ts::computeMtdContiguity` (stop-at-first-gap — a later published audit with a
+  coverage gap before it is excluded and flagged, never silently summed), renders `MtdReportBody` through
+  the same Playwright pipeline as the per-audit report (shared in `lib/report/htmlToPdf.ts`), uploads to a
+  versioned Storage path, and inserts a new `mtdReports` row. The live `/mtd/[month]` page is unaffected
+  by locking — it always shows the current live recompute (ADR-0006) — locking only adds a point-in-time,
+  versioned PDF that remains individually retrievable later, same "versioning is the sole history"
+  invariant as per-audit reports. `createAudit` also hard-blocks a new audit whose period overlaps an
+  existing one for the same outlet, so the sum this pipeline builds can never silently double-count.
 
 ---
 

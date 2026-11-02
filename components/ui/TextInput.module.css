@@ -17,15 +17,22 @@
   font-family: var(--font-ui-body);
   color: var(--ink);
   background: var(--surface);
+  transition: border-color var(--transition-base) var(--ease-standard),
+    box-shadow var(--transition-base) var(--ease-standard);
 }
 
 .input::placeholder {
   color: var(--placeholder);
 }
 
+.input:hover:not(:focus):not(:disabled) {
+  border-color: var(--border-strong);
+}
+
 .input:focus {
   outline: none;
   border-color: var(--ink);
+  box-shadow: 0 0 0 3px var(--brand-tint);
 }
 
 .numeric {

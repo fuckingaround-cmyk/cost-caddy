@@ -1,3 +1,4 @@
+import { BrandMark } from '@/components/ui/BrandMark';
 import { LoginForm } from './LoginForm';
 
 // A1 — Super admin login. Auditors sign in from the separate auditor app (B1).
@@ -24,10 +25,8 @@ export default function AdminLoginPage() {
           padding: '34px 32px',
         }}
       >
-        <div style={{ fontFamily: 'var(--font-ui-title)', fontSize: 'var(--text-login-title)', fontWeight: 600 }}>
-          F&amp;B Controller
-        </div>
-        <div style={{ color: 'var(--muted)', fontSize: 13.5, marginTop: 3 }}>Super admin console</div>
+        <BrandMark size="login" />
+        <div style={{ color: 'var(--muted)', fontSize: 13.5, marginTop: 'var(--space-6)' }}>Super admin console</div>
 
         <LoginForm />
 

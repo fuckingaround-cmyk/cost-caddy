@@ -5,14 +5,28 @@
   border-radius: var(--radius-control);
   padding: 11px 18px;
   font-size: 13px;
-  font-weight: 600;
-  font-family: var(--font-ui-body);
+  font-weight: 500;
+  font-family: var(--font-ui-title);
   cursor: pointer;
+  transition: background-color var(--transition-base) var(--ease-standard),
+    border-color var(--transition-base) var(--ease-standard),
+    box-shadow var(--transition-base) var(--ease-standard),
+    transform var(--transition-fast) var(--ease-standard);
 }
 
 .primary {
-  background: var(--navy-700);
+  background: var(--brand);
   color: #fff;
+}
+
+.primary:not(:disabled):hover {
+  background: var(--brand-hover);
+  box-shadow: var(--shadow-brand-hover);
+  filter: none;
+}
+
+.primary:not(:disabled):active {
+  background: var(--brand-active);
 }
 
 .primary:disabled {
@@ -26,6 +40,16 @@
   color: var(--ink-3);
   padding: 11px 18px;
   border: 1px solid var(--border);
+}
+
+.secondary:not(:disabled):hover {
+  background: var(--surface-alt-1);
+  border-color: var(--border-strong);
+  filter: none;
+}
+
+.secondary:not(:disabled):active {
+  background: var(--divider);
 }
 
 .secondary:disabled {

@@ -24,6 +24,7 @@ export default async function RestaurantsPage() {
           <Link
             key={r.id}
             href={`/admin/restaurants/${r.id}`}
+            className="cardLink"
             style={{
               border: '1px solid var(--divider)',
               borderRadius: 'var(--radius-card)',

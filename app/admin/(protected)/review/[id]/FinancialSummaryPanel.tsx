@@ -31,7 +31,7 @@ export function FinancialSummaryPanel({ draft }: { draft: FinancialReportDraft }
 
   return (
     <div style={{ border: '1px solid var(--border-card)', borderRadius: 'var(--radius-panel)', overflow: 'hidden', marginBottom: 'var(--space-9)' }}>
-      <div style={{ padding: '10px 13px', background: 'var(--navy-700)', color: '#fff', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+      <div style={{ padding: '10px 13px', background: 'var(--brand)', color: '#fff', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
         Financial Summary
       </div>
 

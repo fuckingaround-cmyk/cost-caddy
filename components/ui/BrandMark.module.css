@@ -1,0 +1,29 @@
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.symbol {
+  flex-shrink: 0;
+}
+
+.wordmark,
+.wordmarkLogin {
+  font-family: var(--font-ui-title);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.wordmark {
+  font-size: var(--text-wordmark);
+}
+
+.wordmarkLogin {
+  font-size: var(--text-login-title);
+}
+
+.wordmarkAccent {
+  color: var(--brand);
+}

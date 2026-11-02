@@ -44,6 +44,8 @@ Legend: ☐ todo · ◐ in progress · ☑ done (clear on next rollup)
 - ☑ Report v4 render — §1, §1B, §2; no §3; print-first · C4
 - ☑ Report §2 shows failed checkpoints only, owner's column order, polished observations only; only Fail remarks go to OpenAI · ADR-0019, UX-034
 - ☑ Publish: version stamp, PDF via Playwright — the only export format; split from share link · C5
+- ☑ MTD consolidated report hardening — overlap-blocked audit creation, stop-at-first-gap inclusion,
+  persisted/versioned MTD PDF (Lock & Publish MTD) · ADR-0021
 
 No Client Portal, no XLSX, for now — cut from scope (`EXECUTION.md` R12; formerly C6).
 

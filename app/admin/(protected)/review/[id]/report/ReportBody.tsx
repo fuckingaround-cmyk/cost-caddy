@@ -39,7 +39,7 @@ export function ReportBody({
     <>
       <div data-avoid="" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20, paddingBottom: 8 }}>
         <div>
-          <h1 data-report-title="" style={{ margin: 0, fontSize: 44, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.02, color: 'var(--navy-700)' }}>{audit.outletName}</h1>
+          <h1 data-report-title="" style={{ margin: 0, fontSize: 44, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.02, color: 'var(--brand)' }}>{audit.outletName}</h1>
           {audit.outletCity && (
             <div style={{ fontSize: 13, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--r-muted)', fontWeight: 600, marginTop: 8 }}>
               {audit.outletCity}
@@ -53,9 +53,9 @@ export function ReportBody({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 6,
-                background: 'var(--navy-050)',
-                border: '1px solid var(--navy-border)',
-                color: 'var(--navy-700)',
+                background: 'var(--brand-tint)',
+                border: '1px solid var(--brand-border)',
+                color: 'var(--brand)',
                 padding: '4px 10px',
                 borderRadius: 4,
                 fontSize: 11,

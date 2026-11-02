@@ -1,16 +1,11 @@
 import type { ReactNode } from "react";
+import { BrandMark } from "./BrandMark";
 import styles from "./AppHeader.module.css";
 
-export function AppHeader({
-  wordmark = "F&B Controller",
-  children,
-}: {
-  wordmark?: string;
-  children?: ReactNode;
-}) {
+export function AppHeader({ children }: { children?: ReactNode }) {
   return (
     <header className={styles.header}>
-      <div className={styles.wordmark}>{wordmark}</div>
+      <BrandMark />
       <div className={styles.actions}>{children}</div>
     </header>
   );

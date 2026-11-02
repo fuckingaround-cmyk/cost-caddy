@@ -7,7 +7,7 @@
   text-transform: uppercase;
   padding: var(--space-3) var(--space-6);
   border-radius: var(--radius-pill);
-  background: var(--navy-025);
-  color: var(--navy-700);
-  border: 1px solid var(--navy-border);
+  background: var(--brand-tint);
+  color: var(--brand);
+  border: 1px solid var(--brand-border);
 }

@@ -14,6 +14,21 @@
   text-align: left;
   font: inherit;
   color: inherit;
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+  border-radius: var(--radius-control);
+  transition: background-color var(--transition-base) var(--ease-standard),
+    padding-left var(--transition-base) var(--ease-standard);
+}
+
+.row:hover {
+  background: var(--row-hover-bg);
+  padding-left: var(--space-6);
+  filter: none;
+}
+
+.row:active {
+  transform: scale(0.995);
 }
 
 .main {

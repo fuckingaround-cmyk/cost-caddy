@@ -21,7 +21,7 @@ export function TemplateActions({ templateId, auditCount }: { templateId: string
           borderRadius: 'var(--radius-control)',
           border: '1px solid var(--border)',
           background: 'var(--surface)',
-          color: 'var(--navy-700)',
+          color: 'var(--brand)',
           cursor: 'pointer',
         }}
       >

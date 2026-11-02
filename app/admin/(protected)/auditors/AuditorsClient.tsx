@@ -82,13 +82,13 @@ export function AuditorsClient({
             display: 'flex',
             alignItems: 'center',
             gap: 9,
-            border: '1px solid var(--navy-border)',
-            background: 'var(--navy-050)',
+            border: '1px solid var(--brand-border)',
+            background: 'var(--brand-tint)',
             borderRadius: 'var(--radius-card)',
             padding: '11px 14px',
             marginBottom: 'var(--space-9)',
             fontSize: 12.5,
-            color: 'var(--navy-700)',
+            color: 'var(--brand)',
             fontWeight: 600,
           }}
         >
@@ -123,8 +123,8 @@ export function AuditorsClient({
                   width: 36,
                   height: 36,
                   borderRadius: '50%',
-                  background: active ? 'var(--navy-025)' : 'var(--surface-alt-1)',
-                  color: active ? 'var(--navy-700)' : 'var(--muted-2)',
+                  background: active ? 'var(--brand-tint)' : 'var(--surface-alt-1)',
+                  color: active ? 'var(--brand)' : 'var(--muted-2)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -145,9 +145,9 @@ export function AuditorsClient({
                       letterSpacing: '0.06em',
                       padding: '4px 8px',
                       borderRadius: 'var(--radius-pill)',
-                      background: active ? 'var(--navy-050)' : '#f7f0f0',
-                      color: active ? 'var(--navy-700)' : 'var(--status-fail-fg-app)',
-                      border: `1px solid ${active ? 'var(--navy-border)' : '#e6c9c9'}`,
+                      background: active ? 'var(--brand-tint)' : '#f7f0f0',
+                      color: active ? 'var(--brand)' : 'var(--status-fail-fg-app)',
+                      border: `1px solid ${active ? 'var(--brand-border)' : '#e6c9c9'}`,
                     }}
                   >
                     {active ? 'ACTIVE' : 'SUSPENDED'}
@@ -212,8 +212,8 @@ export function AuditorsClient({
                               fontSize: 12,
                               padding: '6px 10px',
                               borderRadius: 'var(--radius-pill)',
-                              border: `1px solid ${on ? 'var(--navy-700)' : 'var(--border)'}`,
-                              background: on ? 'var(--navy-700)' : 'var(--surface)',
+                              border: `1px solid ${on ? 'var(--brand)' : 'var(--border)'}`,
+                              background: on ? 'var(--brand)' : 'var(--surface)',
                               color: on ? 'var(--surface)' : 'var(--ink-3)',
                               cursor: 'pointer',
                             }}
@@ -472,18 +472,18 @@ function OneTimePassword({ title, password, note }: { title: string; password: s
   return (
     <div
       style={{
-        border: '1px solid var(--navy-border)',
-        background: 'var(--navy-050)',
+        border: '1px solid var(--brand-border)',
+        background: 'var(--brand-tint)',
         borderRadius: 'var(--radius-card)',
         padding: 12,
         marginBottom: 14,
       }}
     >
-      <div style={{ fontSize: 10.5, color: 'var(--navy-700)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 4 }}>
+      <div style={{ fontSize: 10.5, color: 'var(--brand)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 4 }}>
         {title}
       </div>
       <div style={{ fontFamily: 'var(--font-ui-mono)', fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>{password}</div>
-      <div style={{ fontSize: 11.5, color: 'var(--navy-700)', marginTop: 6 }}>{note}</div>
+      <div style={{ fontSize: 11.5, color: 'var(--brand)', marginTop: 6 }}>{note}</div>
     </div>
   );
 }

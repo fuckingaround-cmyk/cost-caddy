@@ -10,7 +10,7 @@ export function CostVsSalesBars({ breakdown }: { breakdown: CostingBreakdown }) 
 
   return (
     <div style={{ border: '1px solid var(--r-border)', borderRadius: 10, padding: 20, background: '#fff', boxShadow: 'var(--shadow-card)' }}>
-      <h3 style={{ margin: '0 0 16px', fontSize: 13.5, fontWeight: 700, color: 'var(--navy-700)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <h3 style={{ margin: '0 0 16px', fontSize: 13.5, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
         Cost vs. Sales by Category
       </h3>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -25,7 +25,7 @@ export function CostVsSalesBars({ breakdown }: { breakdown: CostingBreakdown }) 
               <div style={{ display: 'flex', gap: 3 }}>
                 {Array.from({ length: 10 }, (_, i) => Math.min(Math.max(filled - i, 0), 1)).map((segmentFill, i) => (
                   <div key={i} style={{ flex: 1, height: 8, borderRadius: 2, background: 'var(--r-surface-alt-1)', overflow: 'hidden' }}>
-                    <div style={{ width: `${segmentFill * 100}%`, height: '100%', background: 'var(--navy-700)' }} />
+                    <div style={{ width: `${segmentFill * 100}%`, height: '100%', background: 'var(--brand)' }} />
                   </div>
                 ))}
               </div>

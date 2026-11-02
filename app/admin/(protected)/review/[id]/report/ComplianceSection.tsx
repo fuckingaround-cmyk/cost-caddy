@@ -133,10 +133,10 @@ function DepartmentRows({ dept, interactive }: { dept: Department; interactive: 
   return (
     <>
       <tr data-avoid="">
-        <td colSpan={7} style={{ padding: '8px 16px', background: 'var(--navy-050)', borderTop: '1px solid var(--r-border)', borderBottom: '1px solid var(--r-border)' }}>
+        <td colSpan={7} style={{ padding: '8px 16px', background: 'var(--brand-tint)', borderTop: '1px solid var(--r-border)', borderBottom: '1px solid var(--r-border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontFamily: 'var(--font-report-icons)', fontSize: 15, lineHeight: 1, color: 'var(--navy-700)' }}>{DEPT_ICON[dept.catCode] ?? 'checklist'}</span>
-            <h3 style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: 'var(--navy-700)' }}>{dept.cat}</h3>
+            <span style={{ fontFamily: 'var(--font-report-icons)', fontSize: 15, lineHeight: 1, color: 'var(--brand)' }}>{DEPT_ICON[dept.catCode] ?? 'checklist'}</span>
+            <h3 style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: 'var(--brand)' }}>{dept.cat}</h3>
           </div>
         </td>
       </tr>

@@ -8,29 +8,26 @@
  */
 
 :root {
-  /* Brand / navy */
-  --navy-900: #16202e;
-  --navy-700: #1e3a5f;
-  --navy-500: #2f5d8a;
-  --navy-050: #eef2f7;
-  --navy-025: #f0f4f9;
-  --navy-chip: #eef2f9;
-  --navy-border: #b9c8dd;
-  --navy-border-soft-1: #dbe4f0;
-  --navy-border-soft-2: #d6e2ee;
-  --navy-border-soft-3: #a8c4de;
+  /* Brand — Cost Caddy blue (supersedes the original navy ramp; see DESIGN.md
+     Part A "Colour" and Part B UX-rebrand entry). */
+  --brand: #2563eb;
+  --brand-hover: #3b82f6;
+  --brand-active: #1d4ed8;
+  --brand-tint: #edf3ff;
+  --brand-border: #cbd5e1;
+  --brand-border-soft: #e1e9f6;
 
   /* Neutrals — App UI */
-  --bg: #fafafa;
+  --bg: #f8faff;
   --surface: #ffffff;
-  --surface-alt-1: #f7f9fb;
+  --surface-alt-1: #f8faff;
   --surface-alt-2: #fafbfc;
   --surface-calculated: #f6f8fa;
-  --ink: #111111;
-  --ink-2: #333333;
-  --ink-3: #555555;
-  --muted: #888888;
-  --muted-2: #999999;
+  --ink: #15191f;
+  --ink-2: #4d4d4d;
+  --ink-3: #737985;
+  --muted: #737985;
+  --muted-2: #8992a0;
   --placeholder: #bbbbbb;
   --hint: #8a93a0;
   --hint-2: #6b7a90;
@@ -95,10 +92,11 @@
   --report-chart-rust-3: #d98b4a;
   --report-chart-rust-4: #f0c9a0;
 
-  /* Typography — App UI */
-  --font-ui-body: "Inter", sans-serif;
-  --font-ui-title: "Newsreader", serif;
-  --font-ui-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Typography — App UI (Cost Caddy brand: Space Grotesk for display/
+     headings/buttons/nav, IBM Plex Mono for body/labels/metadata) */
+  --font-ui-body: "IBM Plex Mono", ui-monospace, monospace;
+  --font-ui-title: "Space Grotesk", Arial, sans-serif;
+  --font-ui-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Typography — Report */
   --font-report-body: "Inter Tight", "Hanken Grotesk", system-ui, sans-serif;
@@ -125,7 +123,7 @@
 
   /* Radii */
   --radius-tag: 3px;
-  --radius-control: 6px;
+  --radius-control: 4px;
   --radius-card: 8px;
   --radius-panel: 10px;
   --radius-large: 12px;
@@ -152,6 +150,7 @@
   /* Shadows — almost none; depth is borders, not shadow */
   --shadow-report-header: 0 2px 6px rgba(13, 59, 52, 0.25);
   --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-brand-hover: 0 9px 30px rgb(37 99 235 / 8%);
 
   /* Auditor shell (B1) — one component tree, CSS-media-driven at 640px. See
      DESIGN.md Part A "Auditor shell breakpoint". */
@@ -163,4 +162,19 @@
   --auditor-shell-radius-laptop: 10px;
   --auditor-shell-minheight-mobile: 700px;
   --auditor-shell-minheight-laptop: 600px;
+
+  /* Motion / interaction — subtle hover+press language applied app-wide (no
+     .dc.html source beyond a:hover{color:#666}, copied verbatim below as
+     --ink-hover; the rest are new tokens, see DESIGN.md Part A "Interaction
+     motion"). Durations stay short — this is a controls/audit tool, not a
+     marketing surface. */
+  --transition-fast: 120ms;
+  --transition-base: 160ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --hover-brightness: 0.97;
+  --hover-scale: 1.015;
+  --press-scale: 0.98;
+  --ink-hover: #666666;
+  --row-hover-bg: var(--brand-tint);
+  --focus-ring: #60a5fa;
 }

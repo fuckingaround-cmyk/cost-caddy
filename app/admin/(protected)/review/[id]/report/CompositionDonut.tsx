@@ -27,7 +27,7 @@ export function CompositionDonut({ title, totalLabel, slices }: { title: string;
   return (
     <div style={{ border: '1px solid var(--r-border)', borderRadius: 10, padding: 20, background: '#fff', boxShadow: 'var(--shadow-card)' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
-        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--navy-700)' }}>{title}</h3>
+        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--brand)' }}>{title}</h3>
         <span style={{ fontFamily: 'var(--font-report-mono)', fontSize: 12, color: 'var(--r-ink-2)' }}>{totalLabel}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
@@ -54,7 +54,7 @@ export function CompositionDonut({ title, totalLabel, slices }: { title: string;
           </svg>
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
             <span style={{ fontSize: 10, textTransform: 'uppercase', fontWeight: 700, color: 'var(--r-muted)' }}>Total</span>
-            <span style={{ fontFamily: 'var(--font-report-mono)', fontSize: 14, fontWeight: 700, color: 'var(--navy-700)' }}>{totalLabel}</span>
+            <span style={{ fontFamily: 'var(--font-report-mono)', fontSize: 14, fontWeight: 700, color: 'var(--brand)' }}>{totalLabel}</span>
           </div>
         </div>
         <div style={{ width: '100%', maxWidth: 220, display: 'flex', flexDirection: 'column', gap: 8 }}>

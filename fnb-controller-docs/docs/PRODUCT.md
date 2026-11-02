@@ -7,7 +7,9 @@
 **F&B Controller** — a cloud SaaS platform that digitises F&B cost-controller operations for one audit
 firm. It is delivered as an **Auditor Portal** (internal, mobile-first + laptop) for setup, capture,
 review and publishing, over one governed database. Publishing produces a version-stamped **PDF**, which
-the admin delivers to the outlet directly — there is no outlet-facing portal for now. A **white-labelled
+the admin delivers to the outlet directly — there is no outlet-facing portal for now. An outlet's
+month-to-date rollup across its audits (MTD) can likewise be locked into its own version-stamped PDF once
+the month's audits are in. A **white-labelled
 Client Portal** (read-only, branded per client, token access) is designed (`Super Admin Flow.dc.html`)
 and may be built later, but is out of current scope; see `EXECUTION.md` R12.
 
@@ -45,3 +47,5 @@ costing and variance insight the firm can bill on.
 - The auditor **is never signed out mid-audit and nothing typed is lost** — the session persists and the
   in-progress audit is saved server-side, so it reopens on any device.
 - Auditor passwords are **set/reset by the admin and shown once** — never stored in recoverable form.
+- A restaurant's month-to-date rollup across its audits can be **locked into its own versioned PDF** once
+  ready, same durability guarantee as a per-audit report.

@@ -3,9 +3,10 @@ import { getCurrentUser } from '@/lib/auth';
 import { AuditorShell } from '@/components/ui/AuditorShell';
 import { ListRow } from '@/components/ui/ListRow';
 import { listAuditorAudits, type AuditorAuditRow } from '@/lib/queries/audits';
+import { formatPeriodRange } from '@/lib/dates';
 
 const RESTAURANT_ICON = (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--navy-700)" strokeWidth="1.8" style={{ flexShrink: 0 }}>
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="1.8" style={{ flexShrink: 0 }}>
     <path d="M3 9l1-5h16l1 5" />
     <path d="M4 9v10a1 1 0 001 1h14a1 1 0 001-1V9" />
     <path d="M9 20v-6h6v6" />
@@ -84,7 +85,7 @@ function PendingRow({ audit }: { audit: AuditorAuditRow }) {
         meta={
           <>
             {audit.name && <div>{audit.name}</div>}
-            Period {audit.periodEnd} · {audit.itemsDone} of {audit.itemsTotal} items
+            {formatPeriodRange(audit.periodStart, audit.periodEnd)} · {audit.itemsDone} of {audit.itemsTotal} items
           </>
         }
         status={<Chip {...chip} />}
@@ -103,7 +104,7 @@ function HistoryRow({ audit }: { audit: AuditorAuditRow }) {
         meta={
           <>
             {audit.name && <div>{audit.name}</div>}
-            Period {audit.periodEnd}
+            {formatPeriodRange(audit.periodStart, audit.periodEnd)}
             <AiStatus state={audit.aiState} />
           </>
         }
@@ -128,8 +129,8 @@ function AiStatus({ state }: { state: AuditorAuditRow['aiState'] }) {
 
 const ASSIGNED_CHIP = { bg: 'var(--surface)', color: 'var(--ink-3)', border: 'var(--border)', label: 'ASSIGNED' };
 const IN_PROGRESS_CHIP = { bg: '#fffbeb', color: '#b45309', border: '#fde68a', label: 'IN PROGRESS' };
-const SUBMITTED_CHIP = { bg: 'var(--navy-chip)', color: 'var(--navy-700)', border: 'var(--navy-border)', label: 'SUBMITTED' };
-const PUBLISHED_CHIP = { bg: 'var(--navy-700)', color: 'var(--surface)', border: 'var(--navy-700)', label: 'PUBLISHED' };
+const SUBMITTED_CHIP = { bg: 'var(--brand-tint)', color: 'var(--brand)', border: 'var(--brand-border)', label: 'SUBMITTED' };
+const PUBLISHED_CHIP = { bg: 'var(--brand)', color: 'var(--surface)', border: 'var(--brand)', label: 'PUBLISHED' };
 
 function Chip({ bg, color, border, label }: { bg: string; color: string; border: string; label: string }) {
   return (
